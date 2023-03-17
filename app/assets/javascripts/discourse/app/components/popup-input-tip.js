@@ -28,7 +28,7 @@ export default Component.extend({
 
   dismiss() {
     this.set("shownAt", null);
-    const composer = getOwner(this).lookup("controller:composer");
+    const composer = getOwner(this).lookup("service:composer");
     composer.clearLastValidatedAt();
     this.element.previousElementSibling?.focus();
   },

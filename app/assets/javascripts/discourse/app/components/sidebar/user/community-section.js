@@ -68,7 +68,7 @@ export default class SidebarUserCommunitySection extends SidebarCommonCommunityS
     }
 
     next(() => {
-      getOwner(this).lookup("controller:composer").open(composerArgs);
+      getOwner(this).lookup("service:composer").open(composerArgs);
     });
   }
 }

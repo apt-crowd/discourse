@@ -22,6 +22,7 @@ import { Promise } from "rsvp";
 import { search as searchCategoryTag } from "discourse/lib/category-tag-search";
 import showModal from "discourse/lib/show-modal";
 import userSearch from "discourse/lib/user-search";
+import { inject as service } from "@ember/service";
 
 const SortOrders = [
   { name: I18n.t("search.relevance"), id: 0 },
@@ -39,7 +40,7 @@ const PAGE_LIMIT = 10;
 
 export default Controller.extend({
   application: controller(),
-  composer: controller(),
+  composer: service(),
   bulkSelectEnabled: null,
 
   loading: false,

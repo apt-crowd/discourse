@@ -100,7 +100,7 @@ export default Component.extend(LoadMore, {
     },
 
     resumeDraft(item) {
-      const composer = getOwner(this).lookup("controller:composer");
+      const composer = getOwner(this).lookup("service:composer");
       if (composer.get("model.viewOpen")) {
         composer.close();
       }

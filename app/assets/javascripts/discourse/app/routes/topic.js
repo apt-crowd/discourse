@@ -14,6 +14,7 @@ import PostFlag from "discourse/lib/flag-targets/post-flag";
 const SCROLL_DELAY = 500;
 
 const TopicRoute = DiscourseRoute.extend({
+  composer: service(),
   screenTrack: service(),
 
   scheduledReplace: null,
@@ -333,7 +334,7 @@ const TopicRoute = DiscourseRoute.extend({
     postStream.cancelFilter();
 
     topicController.set("multiSelect", false);
-    this.controllerFor("composer").set("topic", null);
+    this.composer.set("topic", null);
     this.screenTrack.stop();
 
     this.appEvents.trigger("header:hide-topic");
@@ -357,7 +358,7 @@ const TopicRoute = DiscourseRoute.extend({
     controller.set("multiSelect", false);
     controller.get("quoteState").clear();
 
-    this.controllerFor("composer").set("topic", model);
+    this.composer.set("topic", model);
     this.topicTrackingState.trackIncoming("all");
 
     // We reset screen tracking every time a topic is entered
