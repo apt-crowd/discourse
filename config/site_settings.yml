@@ -2818,3 +2818,19 @@ dashboard:
   verbose_user_stat_count_logging:
     hidden: true
     default: false
+apt_crowd:
+  ac_adserver_url:
+    default: ''
+  ac_adserver_email_banners:
+    default: ''
+    type: list
+  ac_powered_by_zone_id:
+    default: ''
+  ac_email_promo_header_zone_id:
+    default: ''
+  ac_email_promo_header_alt_text:
+    default: ''
+  ac_email_promo_footer_zone_id:
+    default: ''
+  ac_email_promo_footer_alt_text:
+    default: ''

@@ -4,7 +4,7 @@
     <%= t('user_notifications.reply_above_line') %>
   </div>
   <% end %>
-
+  <%= render partial: 'email/promo_header' %>
   <div class='header-instructions'>%{header_instructions}</div>
 
   <%- if SiteSetting.private_email? %>
@@ -36,8 +36,24 @@
   <% end %>
 
   <div class='footer undecorated-link-footer <%= first_footer_classes %>'>%{respond_instructions}</div>
-  <div class='footer'>%{unsubscribe_instructions}</div>
 
+  <%= render partial: 'email/sponsor_appreciation' %>
+  <% 
+  cb = SecureRandom.uuid
+  adserver_url = SiteSetting.ac_adserver_url
+  pb_zone = SiteSetting.ac_powered_by_zone_id
+  %>
+  <div style="text-align: center;">
+    <div class='footer'>
+    <%- if !pb_zone.blank? && !adserver_url.blank? %>
+    Powered by <a href='<%=adserver_url%>/www/delivery/ck.php?zoneid=<%=pb_zone%>' target='_blank'><img style='vertical-align: middle;' src='<%=adserver_url%>/www/delivery/avw.php?zoneid=<%=pb_zone%>&amp;source=email-powered-by&amp;cb=%cb' border='0' alt='Apt Crowd' /></a>
+    <%else%>
+    Powered by <a href='https://www.aptcrowd.co/'>Apt Crowd, LLC</a>
+    <%end%>
+    <br />PO Box 3853, Springfield, MO 65808
+    </div>
+    <div class='footer'>%{unsubscribe_instructions}</div>
+  </div>
 </div>
 
 <div itemscope itemtype="http://schema.org/EmailMessage" style="display:none">

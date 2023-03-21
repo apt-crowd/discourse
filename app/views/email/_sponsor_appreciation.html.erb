@@ -1,0 +1,23 @@
+<% 
+cb = SecureRandom.uuid
+ads = SiteSetting.ac_adserver_email_banners.split('|').sample(4)
+adserver_url = SiteSetting.ac_adserver_url
+%>
+<%-# TODO: - Figure out why sponsor recognition doesn't display in plaintext email; idealy a list of advertisers w/ click links would be presented. -%>
+<%= render partial: 'email/promo_footer' %>
+
+<%- if ads.any? && !adserver_url.blank? %>
+	<div style="margin-bottom: 1em;">
+	<p>Please thank these sponsors for their generous support of this community...</p>
+	<table cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px">
+	<tr>
+	<% ads.each_with_index do |ad, idx| \
+	   zone, comp = ad.split(':')
+		%>
+	<td align="center">
+	<a href='<%=adserver_url%>/www/delivery/ck.php?zoneid=<%=zone%>' target='_blank'><img alt='<%=comp%>' src='<%=adserver_url%>/www/delivery/avw.php?zoneid=<%=zone%>&amp;source=email-footer-<%=idx+1%>&amp;cb=<%=cb%>' border='0' alt='<%=comp%>' /></a>
+	</td>
+	<% end %>
+	</table>
+	</div>
+<%end%>

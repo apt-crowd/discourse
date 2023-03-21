@@ -1,0 +1,12 @@
+<% 
+cb = SecureRandom.uuid
+promo_zone_id = SiteSetting.ac_email_promo_header_zone_id
+promo_alt_text = SiteSetting.ac_email_promo_header_alt_text
+adserver_url = SiteSetting.ac_adserver_url
+%>
+
+<%- if !promo_zone_id.blank? && !adserver_url.blank? %>
+<div style="padding: 1.5em 0;">
+	<a style="vertical-align: middle;" href='<%=adserver_url%>/www/delivery/ck.php?zoneid=<%=promo_zone_id%>' target='_blank'><img style="max-width: 100%;" src='<%=adserver_url%>/www/delivery/avw.php?zoneid=<%=promo_zone_id%>&amp;source=email-promo-header&amp;cb=%cb' border='0' alt='<%=promo_alt_text%>' /></a>
+</div>
+<%end%>

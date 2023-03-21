@@ -2467,6 +2467,13 @@ en:
         key: "www.example.com"
         value: "DiscourseConnect secret"
 
+    ac_adserver_url: "Ad server URL without ending /"
+    ac_adserver_email_banners: "List of zone_id:Advertiser Name|zone_id:Advertiser Name|..."
+    ac_powered_by_zone_id: "The zone_id of Powered By Apt Crowd banner"
+    ac_email_promo_header_zone_id: "The zone_id of email notification header promotion banner. Leave blank to disable. THIS SHOULD BE AN EMAIL ZONE TO WORK CORRECTLY."
+    ac_email_promo_header_alt_text: "Alt text for the email notifiaction header promotion banner."
+    ac_email_promo_footer_zone_id: "The zone_id of email notification footer promotion banner. Leave blank to disable. THIS SHOULD BE AN EMAIL ZONE TO WORK CORRECTLY."
+    ac_email_promo_footer_alt_text: "Alt text for the email notifiaction footer promotion banner."
   search:
     extreme_load_error: "Site is under extreme load, search is disabled, try again later"
     within_post: "#%{post_number} by %{username}"
