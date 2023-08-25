@@ -1,9 +1,12 @@
 import { getOwner } from "discourse-common/lib/get-owner";
 import ChatMessagesManager from "discourse/plugins/chat/discourse/lib/chat-messages-manager";
-import User from "discourse/models/user";
 import { escapeExpression } from "discourse/lib/utilities";
 import { tracked } from "@glimmer/tracking";
 import guid from "pretty-text/guid";
+import ChatMessage from "discourse/plugins/chat/discourse/models/chat-message";
+import ChatTrackingState from "discourse/plugins/chat/discourse/models/chat-tracking-state";
+import UserChatThreadMembership from "discourse/plugins/chat/discourse/models/user-chat-thread-membership";
+import ChatThreadPreview from "discourse/plugins/chat/discourse/models/chat-thread-preview";
 
 export const THREAD_STATUSES = {
   open: "open",
@@ -13,38 +16,62 @@ export const THREAD_STATUSES = {
 };
 
 export default class ChatThread {
+  static create(channel, args = {}) {
+    return new ChatThread(channel, args);
+  }
+
+  @tracked id;
   @tracked title;
   @tracked status;
+  @tracked draft;
+  @tracked staged;
+  @tracked channel;
+  @tracked originalMessage;
+  @tracked threadMessageBusLastId;
+  @tracked replyCount;
+  @tracked tracking;
+  @tracked currentUserMembership = null;
+  @tracked preview = null;
 
   messagesManager = new ChatMessagesManager(getOwner(this));
 
-  constructor(args = {}) {
-    this.title = args.title;
+  constructor(channel, args = {}) {
     this.id = args.id;
-    this.channelId = args.channel_id;
+    this.channel = channel;
     this.status = args.status;
+    this.draft = args.draft;
+    this.staged = args.staged;
+    this.replyCount = args.reply_count;
 
-    this.originalMessageUser = this.#initUserModel(args.original_message_user);
-    this.originalMessage = args.original_message;
-    this.originalMessage.user = this.originalMessageUser;
+    this.originalMessage = args.original_message
+      ? ChatMessage.create(channel, args.original_message)
+      : null;
+
+    this.title = args.title;
+
+    if (args.current_user_membership) {
+      this.currentUserMembership = UserChatThreadMembership.create(
+        args.current_user_membership
+      );
+    }
+
+    this.tracking = new ChatTrackingState(getOwner(this));
+    this.preview = ChatThreadPreview.create(args.preview);
   }
 
-  stageMessage(message) {
+  async stageMessage(message) {
     message.id = guid();
     message.staged = true;
     message.draft = false;
     message.createdAt ??= moment.utc().format();
-    message.cook();
+    message.thread = this;
 
     this.messagesManager.addMessages([message]);
+    message.manager = this.messagesManager;
   }
 
-  get messages() {
-    return this.messagesManager.messages;
-  }
-
-  set messages(messages) {
-    this.messagesManager.messages = messages;
+  get routeModels() {
+    return [...this.channel.routeModels, this.id];
   }
 
   get selectedMessages() {
@@ -53,13 +80,5 @@ export default class ChatThread {
 
   get escapedTitle() {
     return escapeExpression(this.title);
-  }
-
-  #initUserModel(user) {
-    if (!user || user instanceof User) {
-      return user;
-    }
-
-    return User.create(user);
   }
 }

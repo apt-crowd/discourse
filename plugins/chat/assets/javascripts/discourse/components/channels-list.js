@@ -4,14 +4,35 @@ import { action } from "@ember/object";
 import { schedule } from "@ember/runloop";
 import { inject as service } from "@ember/service";
 import { tracked } from "@glimmer/tracking";
+import ChatModalNewMessage from "discourse/plugins/chat/discourse/components/chat/modal/new-message";
+
 export default class ChannelsList extends Component {
   @service chat;
   @service router;
   @service chatStateManager;
   @service chatChannelsManager;
   @service site;
+  @service siteSettings;
   @service session;
   @service currentUser;
+  @service modal;
+
+  @tracked hasScrollbar = false;
+
+  @action
+  computeHasScrollbar(element) {
+    this.hasScrollbar = element.scrollHeight > element.clientHeight;
+  }
+
+  @action
+  computeResizedEntries(entries) {
+    this.computeHasScrollbar(entries[0].target);
+  }
+
+  @action
+  openNewMessageModal() {
+    this.modal.show(ChatModalNewMessage);
+  }
 
   @tracked hasScrollbar = false;
 
@@ -26,7 +47,7 @@ export default class ChannelsList extends Component {
   }
 
   get showMobileDirectMessageButton() {
-    return this.site.mobileView && this.showDirectMessageChannels;
+    return this.site.mobileView && this.canCreateDirectMessageChannel;
   }
 
   get inSidebar() {
@@ -63,6 +84,10 @@ export default class ChannelsList extends Component {
   }
 
   get displayPublicChannels() {
+    if (!this.siteSettings.enable_public_channels) {
+      return false;
+    }
+
     if (this.publicMessageChannelsEmpty) {
       return (
         this.currentUser?.staff ||

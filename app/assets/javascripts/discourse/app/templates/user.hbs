@@ -38,7 +38,7 @@
                   @route="review"
                   @query={{hash
                     username=this.model.username
-                    status="all"
+                    status="approved"
                     type="ReviewableFlaggedPost"
                   }}
                 >
@@ -180,8 +180,8 @@
                     this.model.featured_topic.slug
                     this.model.featured_topic.id
                   }}
-                >{{html-safe
-                    (replace-emoji this.model.featured_topic.fancy_title)
+                >{{replace-emoji
+                    (html-safe this.model.featured_topic.fancy_title)
                   }}</LinkTo>
               </div>
             {{/if}}
@@ -319,7 +319,7 @@
               {{#if this.displayTopLevelAdminButton}}
                 <li><a
                     href={{this.model.adminPath}}
-                    class="btn btn-default"
+                    class="btn btn-default user-admin"
                   >{{d-icon "wrench"}}<span class="d-button-label">{{i18n
                         "admin.user.show_admin_profile"
                       }}</span></a></li>
@@ -384,7 +384,7 @@
                       @model={{this.model.invited_by}}
                     >{{this.model.invited_by.username}}</LinkTo></dd></div>
               {{/if}}
-              {{#if this.model.trust_level}}
+              {{#if this.hasTrustLevel}}
                 <div><dt class="trust-level">{{i18n "user.trust_level"}}</dt><dd
                     class="trust-level"
                   >{{this.model.trustLevel.name}}</dd></div>
@@ -452,6 +452,8 @@
     <div class="new-user-wrapper">
       <UserNav
         @user={{this.model}}
+        @isStaff={{this.currentUser.staff}}
+        @isMobileView={{this.site.mobileView}}
         @showNotificationsTab={{this.showNotificationsTab}}
         @showPrivateMessages={{this.showPrivateMessages}}
         @canInviteToForum={{this.canInviteToForum}}

@@ -229,9 +229,9 @@ th:
       aria_label: "กรองตามช่วงเวลา"
     related_messages:
       title: "ข้อความที่เกี่ยวข้อง"
+      pill: "ข้อความที่เกี่ยวข้อง"
       see_all: 'ดู<a href="%{path}">ข้อความทั้งหมด</a>จาก @%{username}'
     suggested_topics:
-      title: "กระทู้แนะนำ"
       pm_title: "ข้อความแนะนำ"
     about:
       simple_title: "เกี่ยวกับ"
@@ -1176,10 +1176,8 @@ th:
       sign_up: "สมัครสมาชิก"
       hide_forever: "ไม่เป็นไร"
     summary:
-      enabled_description: "คุณกำลังดูสรุปของกระทู้นี้ : นี่คือโพสที่น่าสนใจที่สุดที่หลายๆคนแนะนำ"
       description:
         other: "มี <b>%{count}</b> คำตอบ"
-      enable: "สรุปกระทู้นี้"
       disable: "แสดงโพสต์ทั้งหมด"
     deleted_filter:
       enabled_description: "กระทู้นี้ซ่อนโพสต์ที่ถูกลบไปแล้ว"
@@ -1731,7 +1729,6 @@ th:
           "2_8": "คุณจะเห็นจำนวนคำตอบใหม่เพราะคุณกำลังติดตามหมวดหมู่นี้"
           "2_4": "คุณจะเห็นจำนวนคำตอบใหม่เพราะคุณได้โพสต์คำตอบไปยังกระทู้นี้"
           "2_2": "คุณจะเห็นจำนวนคำตอบใหม่เพราะคุณกำลังติดตามกระทู้นี้"
-          "2": 'You will see a count of new replies because you <a href="%{basePath}/u/%{username}/preferences/notifications">read this topic</a>.'
           "1_2": "คุณจะได้รับการแจ้งเตือนเมื่อมีคนกล่าวถึงชื่อของคุณ @name หรือตอบคุณ"
           "1": "คุณจะได้รับการแจ้งเตือนเมื่อมีคนกล่าวถึงชื่อของคุณ @name หรือตอบคุณ"
           "0_2": "คุณไม่ต้องการรับการแจ้งเตือนทั้งหมดจากกระทู้นี้"
@@ -2211,6 +2208,9 @@ th:
         title_with_count:
           other: "ใหม่ (%{count})"
         help: "กระทู้ที่ถูกสร้างในช่วงไม่กี่วันที่ผ่านมา"
+        all: "ทั้งหมด"
+        topics: "หัวข้อ"
+        replies: "ตอบ"
       posted:
         title: "โพสต์ของฉัน"
         help: "กระทู้ที่คุณได้โพสต์"
@@ -2251,6 +2251,9 @@ th:
     lightbox:
       download: "ดาวน์โหลด"
       close: "ปิด (Esc)"
+    experimental_lightbox:
+      buttons:
+        close: "ปิด (Esc)"
     keyboard_shortcuts_help:
       shortcut_key_delimiter_comma: ","
       shortcut_key_delimiter_plus: "+"
@@ -2419,6 +2422,9 @@ th:
         other: "%{count} ใหม่"
       more: "อื่น"
       all_categories: "หมวดหมู่ทั้งหมด"
+      edit_navigation_modal_form:
+        filter_dropdown:
+          all: "ทั้งหมด"
       sections:
         custom:
           save: "บันทึก"
@@ -2447,7 +2453,8 @@ th:
         categories:
           header_link_text: "หมวดหมู่"
         community:
-          header_link_text: "ชุมชน"
+          edit_section:
+            header_dropdown: "การปรับแต่ง"
           links:
             about:
               content: "เกี่ยวกับ"
@@ -2455,8 +2462,8 @@ th:
               content: "แอดมิน"
             badges:
               content: "เหรียญ"
-            everything:
-              content: "ทุกสิ่ง"
+            topics:
+              content: "หัวข้อ"
             faq:
               content: "คำถามที่พบบ่อย"
             groups:
@@ -2470,6 +2477,11 @@ th:
             review:
               content: "รีวิว"
     until: "จนถึง:"
+    form_templates:
+      errors:
+        typeMismatch:
+          default: "กรอกค่าที่ถูกต้อง"
+          email: "กรุณาใส่อีเมลที่ถูกต้อง."
   admin_js:
     type_to_filter: "พิมพ์เพื่อกรอง..."
     admin:
@@ -2671,6 +2683,7 @@ th:
           create: "สร้าง"
           create_type: "ชนิด"
           create_name: "ชื่อ"
+          save: "บันทึก"
           edit: "แก้ไข"
           mobile: "โทรศัพท์"
           settings: "การตั้งค่า"
@@ -2892,6 +2905,8 @@ th:
           validations:
             required:
               key: "ต้องการ"
+            type:
+              key: "ชนิด"
       impersonate:
         not_found: "ไม่พบผู้ใช้นั้น"
       users:
@@ -3064,6 +3079,8 @@ th:
         revert_confirm: "คุณแน่ใจหรือว่าจะย้อนกลับการแก้ไข"
         go_back: "กลับไปค้นหา"
         recommended: "เราแนะนำให้คุณแก้ไขข้อความให้ตรงกับความต้องการของคุณ:"
+        outdated:
+          dismiss: "ซ่อน"
       settings:
         reset: "ล้าง"
         none: "ไม่มี"

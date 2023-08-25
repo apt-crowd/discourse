@@ -1,5 +1,5 @@
 import Component from "@glimmer/component";
-import { tracked } from "@glimmer/tracking";
+import { cached, tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { NO_REMINDER_ICON } from "discourse/models/bookmark";
 import UserMenuTab, { CUSTOM_TABS_CLASSES } from "discourse/lib/user-menu/tab";
@@ -37,11 +37,18 @@ const CORE_TOP_TABS = [
     id = "replies";
     icon = "reply";
     panelComponent = UserMenuRepliesNotificationsList;
-    notificationTypes = ["mentioned", "posted", "quoted", "replied"];
+    notificationTypes = [
+      "mentioned",
+      "group_mentioned",
+      "posted",
+      "quoted",
+      "replied",
+    ];
 
     get count() {
       return (
         this.getUnreadCountForType("mentioned") +
+        this.getUnreadCountForType("group_mentioned") +
         this.getUnreadCountForType("posted") +
         this.getUnreadCountForType("quoted") +
         this.getUnreadCountForType("replied")
@@ -189,13 +196,8 @@ export default class UserMenu extends Component {
   @tracked currentPanelComponent = DEFAULT_PANEL_COMPONENT;
   @tracked currentNotificationTypes;
 
-  constructor() {
-    super(...arguments);
-    this.topTabs = this._topTabs;
-    this.bottomTabs = this._bottomTabs;
-  }
-
-  get _topTabs() {
+  @cached
+  get topTabs() {
     const tabs = [];
 
     CORE_TOP_TABS.forEach((tabClass) => {
@@ -236,7 +238,8 @@ export default class UserMenu extends Component {
     });
   }
 
-  get _bottomTabs() {
+  @cached
+  get bottomTabs() {
     const tabs = [];
 
     CORE_BOTTOM_TABS.forEach((tabClass) => {
@@ -277,6 +280,8 @@ export default class UserMenu extends Component {
       getOwner(this),
       tab.panelComponent
     );
+
+    this.appEvents.trigger("user-menu:tab-click", tab.id);
     this.currentNotificationTypes = tab.notificationTypes;
   }
 

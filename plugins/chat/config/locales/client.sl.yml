@@ -6,6 +6,11 @@
 
 sl:
   js:
+    admin:
+      site_settings:
+        chat_separate_sidebar_mode:
+          always: "Vedno"
+          never: "Nikoli"
     chat:
       create: "Ustvari"
       cancel: "Prekliči"
@@ -72,6 +77,8 @@ sl:
       settings:
         follow: "Pridruži se"
         followed: "Pridružen"
+        threading_enabled: "Vključeno"
+        threading_disabled: "Onemogočeno"
         notifications: "Obvestila"
         preview: "Predogled"
         save: "Shrani"
@@ -104,11 +111,24 @@ sl:
         flags: "Zastave"
         symbols: "Simboli"
       thread:
+        title: "Naziv"
         replies:
           one: "%{count} odgovor"
           two: "%{count} odgovora"
           few: "%{count} odgovori"
           other: "%{count} odgovorov"
+        settings: "Nastavitve"
+        last_reply: "zadnji odgovor"
+        notifications:
+          regular:
+            title: "Običajna"
+          tracking:
+            title: "Sledim"
+        participants_other_count:
+          one: "+%{count}"
+          two: "+%{count}"
+          few: "+%{count}"
+          other: "+%{count}"
       draft_channel_screen:
         header: "Novo zasebno sporočilo"
         cancel: "Prekliči"

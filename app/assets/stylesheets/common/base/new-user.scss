@@ -131,6 +131,10 @@
       @include breakpoint(extra-large) {
         font-size: var(--font-down-1);
       }
+
+      span {
+        display: inline-flex;
+      }
     }
 
     .nav-pills {
@@ -155,40 +159,6 @@
 
     [class*="horizontal-overflow-nav__scroll"] {
       padding-top: var(--navigation-secondary-padding-top);
-    }
-  }
-
-  .user-nav-dropdown-button {
-    background: transparent;
-  }
-
-  .user-nav-dropdown-submenu {
-    background: var(--secondary);
-    list-style-type: none;
-    margin: 0;
-
-    li a {
-      padding: 0.5em 1em;
-      color: var(--primary);
-
-      .discourse-no-touch & {
-        &:hover {
-          background: var(--highlight-bg);
-          color: currentColor;
-        }
-      }
-
-      &.active {
-        background: var(--tertiary-low);
-        color: currentColor;
-      }
-
-      &:first-of-type {
-        padding-top: 0.5em;
-      }
-      &:last-of-type {
-        padding-bottom: 0.5em;
-      }
     }
   }
 

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-RSpec.describe "Drawer", type: :system, js: true do
+RSpec.describe "Drawer", type: :system do
   fab!(:current_user) { Fabricate(:admin) }
   let(:chat_page) { PageObjects::Pages::Chat.new }
   let(:channel_page) { PageObjects::Pages::ChatChannel.new }
-  let(:drawer) { PageObjects::Pages::ChatDrawer.new }
+  let(:drawer_page) { PageObjects::Pages::ChatDrawer.new }
 
   before do
     chat_system_bootstrap
@@ -21,7 +21,7 @@ RSpec.describe "Drawer", type: :system, js: true do
       it "opens channel info page" do
         visit("/")
         chat_page.open_from_header
-        drawer.open_channel(channel)
+        drawer_page.open_channel(channel)
         page.find(".chat-channel-title").click
 
         expect(page).to have_current_path("/chat/c/#{channel.slug}/#{channel.id}/info/about")
@@ -62,7 +62,7 @@ RSpec.describe "Drawer", type: :system, js: true do
 
       expect(page.find("body.chat-drawer-active")).to be_visible
 
-      drawer.close
+      drawer_page.close
 
       expect(page.find("body:not(.chat-drawer-active)")).to be_visible
     end
@@ -77,11 +77,12 @@ RSpec.describe "Drawer", type: :system, js: true do
     it "resets the active message" do
       visit("/")
       chat_page.open_from_header
-      drawer.open_channel(channel_1)
+      drawer_page.open_channel(channel_1)
       channel_page.hover_message(message_1)
-      expect(page).to have_css(".chat-message-actions-container")
 
-      find(".chat-composer__input").send_keys(:escape)
+      expect(page).to have_css(".chat-message-actions-container", visible: :all)
+
+      drawer_page.close
 
       expect(page).to have_no_css(".chat-message-actions-container")
     end
@@ -115,9 +116,9 @@ RSpec.describe "Drawer", type: :system, js: true do
       visit("/")
 
       chat_page.open_from_header
-      drawer.maximize
+      drawer_page.maximize
       chat_page.minimize_full_page
-      drawer.maximize
+      drawer_page.maximize
 
       using_session("user_1") do |session|
         sign_in(user_1)
@@ -126,11 +127,27 @@ RSpec.describe "Drawer", type: :system, js: true do
         session.quit
       end
 
-      expect(page).to have_content("onlyonce", count: 1)
+      expect(page).to have_content("onlyonce", count: 1, wait: 20)
 
       chat_page.visit_channel(channel_2)
 
-      expect(page).to have_content("onlyonce", count: 0)
+      expect(page).to have_content("onlyonce", count: 0, wait: 20)
+    end
+  end
+
+  context "when subfolder install" do
+    fab!(:channel) { Fabricate(:chat_channel) }
+
+    before do
+      channel.add(current_user)
+      set_subfolder "/discuss"
+    end
+
+    it "works to go from full page to drawer" do
+      visit("/discuss/chat")
+      chat_page.minimize_full_page
+
+      expect(drawer_page).to have_open_channel(channel)
     end
   end
 end

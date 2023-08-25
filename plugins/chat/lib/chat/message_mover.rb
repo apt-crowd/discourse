@@ -25,8 +25,7 @@
 # into a new channel, they end up as just a flat series of messages that are
 # not in a chain. If the original message of a thread and N other messages
 # in that thread, then any messages left behind just get placed into a new
-# thread. Message moving will be disabled in the thread UI while
-# enable_experimental_chat_threaded_discussions is present, its too complicated
+# thread. Message moving will be disabled in the thread UI, its too complicated
 # to have end users reason about for now, and we may want a standalone
 # "Move Thread" UI later on.
 module Chat
@@ -66,6 +65,7 @@ module Chat
         update_references
         delete_source_messages
         update_reply_references
+        update_tracking_state
         update_thread_references
       end
 
@@ -111,6 +111,7 @@ module Chat
         message_ids: @ordered_source_message_ids,
         destination_channel_id: destination_channel.id,
       }
+
       moved_message_ids = DB.query_single(<<~SQL, query_args)
       INSERT INTO chat_messages(
         chat_channel_id, user_id, last_editor_id, message, cooked, cooked_version, created_at, updated_at
@@ -125,6 +126,7 @@ module Chat
              CLOCK_TIMESTAMP()
       FROM chat_messages
       WHERE id IN (:message_ids)
+      ORDER BY created_at ASC, id ASC
       RETURNING id
     SQL
 
@@ -204,6 +206,10 @@ module Chat
       SET in_reply_to_id = NULL
       WHERE in_reply_to_id IN (:deleted_reply_to_ids)
     SQL
+    end
+
+    def update_tracking_state
+      ::Chat::Action::ResetUserLastReadChannelMessage.call(@source_message_ids, @source_channel.id)
     end
 
     def update_thread_references

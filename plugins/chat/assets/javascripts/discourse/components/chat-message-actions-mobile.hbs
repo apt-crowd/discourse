@@ -9,14 +9,14 @@
     <div
       role="button"
       class="collapse-area"
-      {{on "touchstart" this.collapseMenu passive=true}}
+      {{on "touchstart" this.collapseMenu passive=false bubbles=false}}
     >
     </div>
 
     <div class="chat-message-actions">
       <div class="selected-message-container">
         <div class="selected-message">
-          <ChatUserAvatar @user={{this.message.user}} />
+          <Chat::UserAvatar @user={{this.message.user}} />
           <span
             {{on "touchstart" this.expandReply passive=true}}
             role="button"
@@ -31,7 +31,7 @@
       </div>
 
       <ul class="secondary-actions">
-        {{#each this.messageInteractor.secondaryButtons as |button|}}
+        {{#each this.messageInteractor.secondaryActions as |button|}}
           <li class="chat-message-action-item" data-id={{button.id}}>
             <DButton
               @class="chat-message-action"
@@ -64,6 +64,7 @@
               @icon="discourse-emojis"
               @title="chat.react"
               @forwardEvent={{true}}
+              data-id="react"
             />
           {{/if}}
 
@@ -71,6 +72,7 @@
             <DButton
               @class="btn-flat bookmark-btn"
               @action={{action this.actAndCloseMenu "toggleBookmark"}}
+              data-id="bookmark"
             >
               <BookmarkIcon @bookmark={{this.message.bookmark}} />
             </DButton>
@@ -82,6 +84,7 @@
               @action={{action this.actAndCloseMenu "reply"}}
               @icon="reply"
               @title="chat.reply"
+              data-id="reply"
             />
           {{/if}}
         </div>

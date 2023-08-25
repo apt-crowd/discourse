@@ -4,6 +4,10 @@ en:
       site_settings:
         categories:
           chat: Chat
+        chat_separate_sidebar_mode:
+          always: "Always"
+          fullscreen: "When chat is in fullscreen"
+          never: "Never"
       logs:
         staff_actions:
           actions:
@@ -81,7 +85,10 @@ en:
       collapse: "Collapse Chat Drawer"
       expand: "Expand Chat Drawer"
       confirm_flag: "Are you sure you want to flag %{username}'s message?"
-      deleted: "A message was deleted. [view]"
+      deleted:
+        one: "A message was deleted. [view]"
+        other: "%{count} messages were deleted. [view all]"
+
       hidden: "A message was hidden. [view]"
       delete: "Delete"
       edited: "edited"
@@ -101,6 +108,8 @@ en:
         all_new: "All New Messages"
         dm_and_mentions: "Direct Messages and Mentions"
         never: "Never"
+      separate_sidebar_mode:
+        title: "Show separate sidebar modes for forum and chat"
       enable: "Enable chat"
       flag: "Flag"
       emoji: "Insert emoji"
@@ -111,6 +120,14 @@ en:
       heading: "Chat"
       join: "Join"
       last_visit: "last visit"
+
+      summarization:
+        title: "Summarize messages"
+        description: "Select an option below to summarize the conversation sent during the desired timeframe."
+        summarize: "Summarize"
+        since:
+          one: "Last hour"
+          other: "Last %{count} hours"
       mention_warning:
         dismiss: "dismiss"
         cannot_see: "%{username} can't access this channel and was not notified."
@@ -129,6 +146,7 @@ en:
         group_mentions_disabled_multiple:
           one: "%{group_name} and %{count} other group don't allow mentions."
           other: "%{group_name} and %{count} other groups don't allow mentions."
+        channel_wide_mentions_disallowed: "@here and @all mentions are disabled in this channel."
         too_many_members: "%{group_name} has too many members. No one was notified."
         too_many_members_multiple:
           one: "%{group_name} and %{count} other group have too many members. No one was notified."
@@ -229,8 +247,6 @@ en:
         closed: "Channel is closed, you cannot send new messages right now."
         read_only: "Channel is read only, you cannot send new messages right now."
       placeholder_silenced: "You cannot send messages at this time."
-      placeholder_start_conversation: "Start a conversation with ..."
-      placeholder_start_conversation_users: "Start a conversation with %{commaSeparatedUsernames}"
       remove_upload: "Remove file"
       react: "React with emoji"
       reply: "Reply"
@@ -247,6 +263,10 @@ en:
       save: "Save"
       select: "Select"
       return_to_list: "Return to channels list"
+      return_to_threads_list: "Return to ongoing discussions"
+      unread_threads_count:
+        one: "You have %{count} unread discussion"
+        other: "You have %{count} unread discussions"
       scroll_to_bottom: "Scroll to bottom"
       scroll_to_new_messages: "See new messages"
       sound:
@@ -270,7 +290,7 @@ en:
         read_only: "Read Only"
         archived_header: "Channel is archived"
         archived: "Archived"
-        archive_failed: "Archive channel failed. %{completed}/%{total} messages have been archived. <a target=\"_blank\" href=\"%{topic_url}\">the destination topic</a>. Press retry to attempt to complete the archive."
+        archive_failed: "Archive channel failed. %{completed}/%{total} messages have been archived. <a target=\"_blank\" href=\"%{topic_url}\">The destination topic</a> was created. Press retry to attempt to complete the archive."
         archive_failed_no_topic: "Archive channel failed. %{completed}/%{total} messages have been archived, the destination topic was not created. Press retry to attempt to complete the archive."
         archive_completed: "See <a target=\"_blank\" href=\"%{topic_url}\">the archive topic</a>"
         closed_header: "Channel is closed"
@@ -309,6 +329,18 @@ en:
           members: Members
           settings: Settings
 
+      new_message_modal:
+        title: Send message
+        add_user_long: <kbd>shift + click</kbd> or <kbd>shift + enter</kbd><span>Add @%{username}</span>
+        add_user_short: <span>Add user</span>
+        open_channel: <span>Open channel</span>
+        default_search_placeholder: "#a-channel, @somebody or anything"
+        default_channel_search_placeholder: "#a-channel"
+        default_user_search_placeholder: "@somebody"
+        user_search_placeholder: "...add more users"
+        disabled_user: "has disabled chat"
+        no_items: "No items"
+
       channel_edit_name_slug_modal:
         title: Edit channel
         input_placeholder: Add a name
@@ -327,10 +359,6 @@ en:
         no_results: No results
         selected_user_title: "Deselect %{username}"
 
-      channel_selector:
-        title: "Jump to channel"
-        no_channels: "No channels match your search"
-
       channel:
         no_memberships: This channel has no members
         no_memberships_found: No members found
@@ -339,6 +367,8 @@ en:
           other: "%{count} members"
 
       create_channel:
+        threading:
+          label: "Enable threading"
         auto_join_users:
           public_category_warning: "%{category} is a public category. Automatically add all recently active users to this channel?"
           warning_1_group:
@@ -416,6 +446,8 @@ en:
       settings:
         channel_wide_mentions_label: "Allow @all and @here mentions"
         channel_wide_mentions_description: "Allow users to notify all members of #%{channel} with @all or only those who are active in the moment with @here"
+        channel_threading_label: "Threading"
+        channel_threading_description: "When threading is enabled, replies to a chat message will create a separate conversation, which will exist alongside the main channel."
         auto_join_users_label: "Automatically add users"
         auto_join_users_info: "Check hourly which users have been active in the last 3 months. Add them to this channel if they have access to the %{category} category."
         auto_join_users_info_no_category: "Check hourly which users have been active in the last 3 months. Add them to this channel if they have access to the selected category."
@@ -425,6 +457,8 @@ en:
         followed: "Joined"
         mobile_notification_level: "Mobile push notifications"
         mute: "Mute channel"
+        threading_enabled: "Enabled"
+        threading_disabled: "Disabled"
         muted_on: "On"
         muted_off: "Off"
         notifications: "Notifications"
@@ -436,6 +470,11 @@ en:
 
       admin:
         title: "Chat"
+        export_messages:
+          title: "Export chat messages"
+          description: "This exports all messages from all channels."
+          create_export: "Create export"
+          export_has_started: "The export has started. You'll receive a PM when it's ready."
 
       direct_messages:
         title: "Personal chat"
@@ -538,15 +577,31 @@ en:
         no_results: "No results"
 
       thread:
+        title: "Title"
         view_thread: View thread
         replies:
           one: "%{count} reply"
           other: "%{count} replies"
         label: Thread
         close: "Close Thread"
+        original_message:
+          started_by: "Started by"
+        settings: "Settings"
+        last_reply: "last reply"
+        notifications:
+          regular:
+            title: "Normal"
+            description: "You will be notified if someone mentions your @name in this thread."
+          tracking:
+            title: "Tracking"
+            description: "A count of new replies for this thread will be shown in the thread list and the channel. You will be notified if someone mentions your @name in this thread."
+        participants_other_count:
+          one: "+%{count}"
+          other: "+%{count}"
       threads:
-        started_by: "Started by"
         open: "Open Thread"
+        list: "Ongoing discussions"
+        none: "You are not participating in any threads in this channel."
 
       draft_channel_screen:
         header: "New Message"
@@ -631,3 +686,13 @@ en:
         chat_notifications_with_unread:
           one: "Chat notifications - %{count} unread notification"
           other: "Chat notifications - %{count} unread notifications"
+
+    styleguide:
+      sections:
+        chat:
+          title: Chat
+
+    sidebar:
+      panels:
+        chat:
+          label: "Chat"

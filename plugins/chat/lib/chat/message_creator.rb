@@ -13,11 +13,13 @@ module Chat
       chat_channel:,
       in_reply_to_id: nil,
       thread_id: nil,
+      staged_thread_id: nil,
       user:,
       content:,
       staged_id: nil,
       incoming_chat_webhook: nil,
-      upload_ids: nil
+      upload_ids: nil,
+      created_at: nil
     )
       @chat_channel = chat_channel
       @user = user
@@ -31,6 +33,7 @@ module Chat
       @incoming_chat_webhook = incoming_chat_webhook
       @upload_ids = upload_ids || []
       @thread_id = thread_id
+      @staged_thread_id = staged_thread_id
       @error = nil
 
       @chat_message =
@@ -40,28 +43,36 @@ module Chat
           last_editor_id: @user.id,
           in_reply_to_id: @in_reply_to_id,
           message: @content,
+          created_at: created_at,
         )
     end
 
     def create
       begin
         validate_channel_status!
-        uploads = get_uploads
-        validate_message!(has_uploads: uploads.any?)
+        @chat_message.uploads = get_uploads
+        validate_message!
         validate_reply_chain!
         validate_existing_thread!
+
         @chat_message.thread_id = @existing_thread&.id
         @chat_message.cook
         @chat_message.save!
+        @chat_message.create_mentions
+
         create_chat_webhook_event
         create_thread
-        @chat_message.attach_uploads(uploads)
         Chat::Draft.where(user_id: @user.id, chat_channel_id: @chat_channel.id).destroy_all
-        Chat::Publisher.publish_new!(@chat_channel, @chat_message, @staged_id)
-        resolved_thread&.increment_replies_count_cache
+        post_process_resolved_thread
+        update_channel_last_message
+        Chat::Publisher.publish_new!(
+          @chat_channel,
+          @chat_message,
+          @staged_id,
+          staged_thread_id: @staged_thread_id,
+        )
         Jobs.enqueue(Jobs::Chat::ProcessMessage, { chat_message_id: @chat_message.id })
         Chat::Notifier.notify_new(chat_message: @chat_message, timestamp: @chat_message.created_at)
-        @chat_channel.touch(:last_message_sent_at)
         DiscourseEvent.trigger(:chat_message_created, @chat_message, @chat_channel, @user)
       rescue => error
         @error = error
@@ -123,6 +134,8 @@ module Chat
     end
 
     def validate_existing_thread!
+      return if @staged_thread_id.present? && @thread_id.blank?
+
       return if @thread_id.blank?
       @existing_thread = Chat::Thread.find(@thread_id)
 
@@ -142,11 +155,9 @@ module Chat
       end
     end
 
-    def validate_message!(has_uploads:)
-      @chat_message.validate_message(has_uploads: has_uploads)
-      if @chat_message.errors.present?
-        raise StandardError.new(@chat_message.errors.map(&:full_message).join(", "))
-      end
+    def validate_message!
+      return if @chat_message.valid?
+      raise StandardError.new(@chat_message.errors.map(&:full_message).join(", "))
     end
 
     def create_chat_webhook_event
@@ -165,7 +176,7 @@ module Chat
 
     def create_thread
       return if @in_reply_to_id.blank?
-      return if @chat_message.in_thread?
+      return if @chat_message.in_thread? && !@staged_thread_id.present?
 
       if @original_message.thread
         thread = @original_message.thread
@@ -177,10 +188,6 @@ module Chat
             channel: @chat_message.chat_channel,
           )
         @chat_message.in_reply_to.thread_id = thread.id
-        Chat::Publisher.publish_thread_created!(
-          @chat_message.chat_channel,
-          @chat_message.in_reply_to,
-        )
       end
 
       @chat_message.thread_id = thread.id
@@ -206,10 +213,37 @@ module Chat
         FROM thread_updater
         WHERE thread_id IS NULL AND chat_messages.id = thread_updater.id
       SQL
+
+      if @chat_message.chat_channel.threading_enabled
+        Chat::Publisher.publish_thread_created!(
+          @chat_message.chat_channel,
+          @chat_message.in_reply_to,
+          thread.id,
+          @staged_thread_id,
+        )
+      end
     end
 
     def resolved_thread
       @existing_thread || @chat_message.thread
+    end
+
+    def post_process_resolved_thread
+      return if resolved_thread.blank?
+
+      resolved_thread.update!(last_message: @chat_message)
+      resolved_thread.increment_replies_count_cache
+      current_user_thread_membership = resolved_thread.add(@user)
+      current_user_thread_membership.update!(last_read_message_id: @chat_message.id)
+
+      if resolved_thread.original_message_user != @user
+        resolved_thread.add(resolved_thread.original_message_user)
+      end
+    end
+
+    def update_channel_last_message
+      return if @chat_message.thread_reply?
+      @chat_channel.update!(last_message: @chat_message)
     end
   end
 end

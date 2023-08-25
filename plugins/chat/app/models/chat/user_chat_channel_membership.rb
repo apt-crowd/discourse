@@ -13,9 +13,6 @@ module Chat
     enum :desktop_notification_level, NOTIFICATION_LEVELS, prefix: :desktop_notifications
     enum :mobile_notification_level, NOTIFICATION_LEVELS, prefix: :mobile_notifications
     enum :join_mode, { manual: 0, automatic: 1 }
-
-    attribute :unread_count, default: 0
-    attribute :unread_mentions, default: 0
   end
 end
 
@@ -35,6 +32,7 @@ end
 #  updated_at                          :datetime         not null
 #  last_unread_mention_when_emailed_id :integer
 #  join_mode                           :integer          default("manual"), not null
+#  last_viewed_at                      :datetime         not null
 #
 # Indexes
 #

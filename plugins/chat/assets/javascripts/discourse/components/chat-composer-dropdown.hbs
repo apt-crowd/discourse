@@ -1,15 +1,21 @@
 {{#if @buttons.length}}
-  <DButton
-    @disabled={{@isDisabled}}
-    @class="chat-composer-dropdown__trigger-btn btn-flat btn-icon"
-    @title="chat.composer.toggle_toolbar"
-    @icon={{if @hasActivePanel "times" "plus"}}
-    @action={{this.toggleExpand}}
+  <Chat::Composer::Button
+    {{on "click" this.toggleExpand}}
+    @icon="plus"
+    title={{i18n "chat.composer.toggle_toolbar"}}
+    disabled={{@isDisabled}}
     {{did-insert this.setupTrigger}}
+    class={{concat-class
+      "chat-composer-dropdown__trigger-btn"
+      (if @hasActivePanel "has-active-panel")
+    }}
+    aria-expanded={{if this.isExpanded "true" "false"}}
+    aria-controls={{this.ariaControls}}
+    ...attributes
   />
-
   {{#if this.isExpanded}}
     <ul
+      id="chat-composer-dropdown__list"
       class="chat-composer-dropdown__list"
       {{did-insert this.setupPanel}}
       {{will-destroy this.teardownPanel}}
@@ -22,7 +28,7 @@
               button.id
             }}
             @icon={{button.icon}}
-            @action={{(fn this.onButtonClick button)}}
+            @action={{fn this.onButtonClick button}}
             @label={{button.label}}
           />
         </li>

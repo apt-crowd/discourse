@@ -16,7 +16,17 @@ import { SKIP } from "discourse/lib/autocomplete";
 import I18n from "I18n";
 import { translations } from "pretty-text/emoji/data";
 import { setupHashtagAutocomplete } from "discourse/lib/hashtag-autocomplete";
-import { isEmpty, isPresent } from "@ember/utils";
+import { isPresent } from "@ember/utils";
+import { Promise } from "rsvp";
+import User from "discourse/models/user";
+import ChatMessageInteractor from "discourse/plugins/chat/discourse/lib/chat-message-interactor";
+import {
+  destroyUserStatuses,
+  initUserStatusHtml,
+  renderUserStatusHtml,
+} from "discourse/lib/user-status-on-autocomplete";
+import ChatModalChannelSummary from "discourse/plugins/chat/discourse/components/chat/modal/channel-summary";
+import InsertHyperlink from "discourse/components/modal/insert-hyperlink";
 
 export default class ChatComposer extends Component {
   @service capabilities;
@@ -30,15 +40,18 @@ export default class ChatComposer extends Component {
   @service chatEmojiPickerManager;
   @service currentUser;
   @service chatApi;
+  @service chatDraftsManager;
+  @service modal;
 
   @tracked isFocused = false;
-
-  get shouldRenderReplyingIndicator() {
-    return this.context === "channel" && !this.args.channel?.isDraft;
-  }
+  @tracked inProgressUploadsCount = 0;
+  @tracked presenceChannelName;
 
   get shouldRenderMessageDetails() {
-    return this.currentMessage?.editing || this.currentMessage?.inReplyTo;
+    return (
+      this.currentMessage?.editing ||
+      (this.context === "channel" && this.currentMessage?.inReplyTo)
+    );
   }
 
   get inlineButtons() {
@@ -60,15 +73,6 @@ export default class ChatComposer extends Component {
     );
   }
 
-  get disabled() {
-    return (
-      (this.args.channel.isDraft &&
-        isEmpty(this.args.channel?.chatable?.users)) ||
-      !this.chat.userCanInteractWithChat ||
-      !this.args.channel.canModifyMessages(this.currentUser)
-    );
-  }
-
   @action
   persistDraft() {}
 
@@ -82,20 +86,37 @@ export default class ChatComposer extends Component {
 
   @action
   setupTextareaInteractor(textarea) {
-    this.textareaInteractor = new TextareaInteractor(getOwner(this), textarea);
+    this.composer.textarea = new TextareaInteractor(getOwner(this), textarea);
+
+    if (this.site.desktopView && this.args.autofocus) {
+      this.composer.focus({ ensureAtEnd: true, refreshHeight: true });
+    }
   }
 
   @action
   didUpdateMessage() {
-    cancel(this._persistHandler);
-    this.textareaInteractor.value = this.currentMessage.message || "";
-    this.textareaInteractor.focus({ refreshHeight: true });
+    this.cancelPersistDraft();
+    this.composer.textarea.value = this.currentMessage.message;
+    this.persistDraft();
+    this.captureMentions({ skipDebounce: true });
   }
 
   @action
   didUpdateInReplyTo() {
-    this.textareaInteractor.focus({ ensureAtEnd: true, refreshHeight: true });
+    this.cancelPersistDraft();
     this.persistDraft();
+  }
+
+  @action
+  cancelPersistDraft() {
+    cancel(this._persistHandler);
+  }
+
+  @action
+  handleInlineButonAction(buttonAction, event) {
+    event.stopPropagation();
+
+    buttonAction();
   }
 
   get currentMessage() {
@@ -103,19 +124,27 @@ export default class ChatComposer extends Component {
   }
 
   get hasContent() {
-    const minLength = this.siteSettings.chat_minimum_message_length || 0;
+    const minLength = this.siteSettings.chat_minimum_message_length || 1;
     return (
-      this.currentMessage?.message?.length > minLength ||
-      (this.canAttachUploads && this.currentMessage?.uploads?.length > 0)
+      this.currentMessage?.message?.length >= minLength ||
+      (this.canAttachUploads && this.hasUploads)
     );
   }
 
+  get hasUploads() {
+    return this.currentMessage?.uploads?.length > 0;
+  }
+
   get sendEnabled() {
-    return this.hasContent && !this.pane.sending;
+    return (
+      (this.hasContent || this.currentMessage?.editing) &&
+      !this.pane.sending &&
+      !this.inProgressUploadsCount > 0
+    );
   }
 
   @action
-  setupAppEvents() {
+  setup() {
     this.appEvents.on("chat:modify-selection", this, "modifySelection");
     this.appEvents.on(
       "chat:open-insert-link-modal",
@@ -125,24 +154,25 @@ export default class ChatComposer extends Component {
   }
 
   @action
-  teardownAppEvents() {
+  teardown() {
     this.appEvents.off("chat:modify-selection", this, "modifySelection");
     this.appEvents.off(
       "chat:open-insert-link-modal",
       this,
       "openInsertLinkModal"
     );
+    this.pane.sending = false;
   }
 
   @action
   insertDiscourseLocalDate() {
     showModal("discourse-local-dates-create-modal").setProperties({
       insertDate: (markup) => {
-        this.textareaInteractor.addText(
-          this.textareaInteractor.getSelected(),
+        this.composer.textarea.addText(
+          this.composer.textarea.getSelected(),
           markup
         );
-        this.textareaInteractor.focus();
+        this.composer.focus();
       },
     });
   }
@@ -161,8 +191,9 @@ export default class ChatComposer extends Component {
 
   @action
   onInput(event) {
+    this.currentMessage.draftSaved = false;
     this.currentMessage.message = event.target.value;
-    this.textareaInteractor.refreshHeight();
+    this.composer.textarea.refreshHeight();
     this.reportReplyingPresence();
     this.persistDraft();
     this.captureMentions();
@@ -170,6 +201,10 @@ export default class ChatComposer extends Component {
 
   @action
   onUploadChanged(uploads, { inProgressUploadsCount }) {
+    this.currentMessage.draftSaved = false;
+
+    this.inProgressUploadsCount = inProgressUploadsCount || 0;
+
     if (
       typeof uploads !== "undefined" &&
       inProgressUploadsCount !== "undefined" &&
@@ -179,40 +214,44 @@ export default class ChatComposer extends Component {
       this.currentMessage.uploads = cloneJSON(uploads);
     }
 
-    this.textareaInteractor.focus();
+    this.composer.textarea?.focus();
     this.reportReplyingPresence();
     this.persistDraft();
   }
 
   @action
-  onSend() {
+  trapMouseDown(event) {
+    event?.preventDefault();
+  }
+
+  @action
+  async onSend(event) {
     if (!this.sendEnabled) {
       return;
     }
 
-    if (this.site.mobileView) {
-      // prevents to hide the keyboard after sending a message
-      // we use direct DOM manipulation here because textareaInteractor.focus()
-      // is using the runloop which is too late
-      this.textareaInteractor.textarea.focus();
+    event?.preventDefault();
+
+    if (
+      this.currentMessage.editing &&
+      !this.hasUploads &&
+      this.currentMessage.message.length === 0
+    ) {
+      this.#deleteEmptyMessage();
+      return;
     }
 
-    this.args.onSendMessage(this.currentMessage);
-    this.textareaInteractor.focus({ refreshHeight: true });
-  }
-
-  @action
-  onCancel() {
-    this.composer.cancel();
+    await this.args.onSendMessage(this.currentMessage);
+    this.composer.textarea.refreshHeight();
   }
 
   reportReplyingPresence() {
-    if (this.args.channel.isDraft) {
+    if (!this.args.channel || !this.currentMessage) {
       return;
     }
 
     this.chatComposerPresenceManager.notifyState(
-      this.args.channel.id,
+      this.presenceChannelName,
       !this.currentMessage.editing && this.hasContent
     );
   }
@@ -223,13 +262,13 @@ export default class ChatComposer extends Component {
       return;
     }
 
-    const sel = this.textareaInteractor.getSelected("", { lineVal: true });
+    const sel = this.composer.textarea.getSelected("", { lineVal: true });
     if (options.type === "bold") {
-      this.textareaInteractor.applySurround(sel, "**", "**", "bold_text");
+      this.composer.textarea.applySurround(sel, "**", "**", "bold_text");
     } else if (options.type === "italic") {
-      this.textareaInteractor.applySurround(sel, "_", "_", "italic_text");
+      this.composer.textarea.applySurround(sel, "_", "_", "italic_text");
     } else if (options.type === "code") {
-      this.textareaInteractor.applySurround(sel, "`", "`", "code_text");
+      this.composer.textarea.applySurround(sel, "`", "`", "code_text");
     }
   }
 
@@ -239,9 +278,9 @@ export default class ChatComposer extends Component {
       return;
     }
 
-    // hack to prevent the whole viewport
-    // to move on focus input
-    textarea = document.querySelector(".chat-composer__input");
+    // hack to prevent the whole viewport to move on focus input
+    // we need access to native node
+    textarea = this.composer.textarea.textarea;
     textarea.style.transform = "translateY(-99999px)";
     textarea.focus();
     window.requestAnimationFrame(() => {
@@ -262,6 +301,10 @@ export default class ChatComposer extends Component {
       return;
     }
 
+    if (event.key === "Escape" && !event.shiftKey) {
+      return this.handleEscape(event);
+    }
+
     if (event.key === "Enter") {
       if (event.shiftKey) {
         // Shift+Enter: insert newline
@@ -271,8 +314,8 @@ export default class ChatComposer extends Component {
       // Ctrl+Enter, plain Enter: send
       if (!event.ctrlKey) {
         // if we are inside a code block just insert newline
-        const { pre } = this.textareaInteractor.getSelected({ lineVal: true });
-        if (this.textareaInteractor.isInside(pre, /(^|\n)```/g)) {
+        const { pre } = this.composer.textarea.getSelected({ lineVal: true });
+        if (this.composer.textarea.isInside(pre, /(^|\n)```/g)) {
           return;
         }
       }
@@ -287,28 +330,15 @@ export default class ChatComposer extends Component {
       !this.hasContent &&
       !this.currentMessage.editing
     ) {
-      const editableMessage = this.pane?.lastCurrentUserMessage;
-      if (editableMessage) {
-        this.composer.editMessage(editableMessage);
-      }
-    }
-
-    if (event.key === "Escape") {
-      if (this.currentMessage?.inReplyTo) {
-        this.reset();
-        return false;
-      } else if (this.currentMessage?.editing) {
-        this.composer.onCancelEditing();
-        return false;
+      if (event.shiftKey && this.lastMessage?.replyable) {
+        this.composer.replyTo(this.lastMessage);
       } else {
-        event.target.blur();
+        const editableMessage = this.lastUserMessage(this.currentUser);
+        if (editableMessage?.editable) {
+          this.composer.edit(editableMessage);
+        }
       }
     }
-  }
-
-  @action
-  reset() {
-    this.composer.reset(this.args.channel);
   }
 
   @action
@@ -317,12 +347,14 @@ export default class ChatComposer extends Component {
       return;
     }
 
-    const selected = this.textareaInteractor.getSelected("", { lineVal: true });
+    const selected = this.composer.textarea.getSelected("", { lineVal: true });
     const linkText = selected?.value;
-    showModal("insert-hyperlink").setProperties({
-      linkText,
-      toolbarEvent: {
-        addText: (text) => this.textareaInteractor.addText(selected, text),
+    this.modal.show(InsertHyperlink, {
+      model: {
+        linkText,
+        toolbarEvent: {
+          addText: (text) => this.composer.textarea.addText(selected, text),
+        },
       },
     });
   }
@@ -331,25 +363,37 @@ export default class ChatComposer extends Component {
   onSelectEmoji(emoji) {
     const code = `:${emoji}:`;
     this.chatEmojiReactionStore.track(code);
-    this.textareaInteractor.addText(
-      this.textareaInteractor.getSelected(),
-      code
-    );
+    this.composer.textarea.addText(this.composer.textarea.getSelected(), code);
 
     if (this.site.desktopView) {
-      this.textareaInteractor.focus();
+      this.composer.focus();
     } else {
       this.chatEmojiPickerManager.close();
     }
   }
 
   @action
-  captureMentions() {
+  captureMentions(opts = { skipDebounce: false }) {
     if (this.hasContent) {
       this.chatComposerWarningsTracker.trackMentions(
-        this.currentMessage.message
+        this.currentMessage,
+        opts.skipDebounce
       );
+    } else {
+      this.chatComposerWarningsTracker.reset();
     }
+  }
+
+  @action
+  showChannelSummaryModal() {
+    this.modal.show(ChatModalChannelSummary, {
+      model: { channelId: this.args.channel.id },
+    });
+  }
+
+  #addMentionedUser(userData) {
+    const user = User.create(userData);
+    this.currentMessage.mentionedUsers.set(user.id, user);
   }
 
   #applyUserAutocomplete($textarea) {
@@ -363,8 +407,15 @@ export default class ChatComposer extends Component {
       width: "100%",
       treatAsTextarea: true,
       autoSelectFirstSuggestion: true,
-      transformComplete: (v) => v.username || v.name,
+      transformComplete: (obj) => {
+        if (obj.isUser) {
+          this.#addMentionedUser(obj);
+        }
+
+        return obj.username || obj.name;
+      },
       dataSource: (term) => {
+        destroyUserStatuses();
         return userSearch({ term, includeGroups: true }).then((result) => {
           if (result?.users?.length > 0) {
             const presentUserNames =
@@ -374,16 +425,21 @@ export default class ChatComposer extends Component {
                 user.cssClasses = "is-online";
               }
             });
+            initUserStatusHtml(result.users);
           }
           return result;
         });
       },
+      onRender: (options) => {
+        renderUserStatusHtml(options);
+      },
       afterComplete: (text, event) => {
         event.preventDefault();
-        this.textareaInteractor.value = text;
-        this.textareaInteractor.focus();
+        this.composer.textarea.value = text;
+        this.composer.focus();
         this.captureMentions();
       },
+      onClose: destroyUserStatuses,
     });
   }
 
@@ -396,8 +452,8 @@ export default class ChatComposer extends Component {
         treatAsTextarea: true,
         afterComplete: (text, event) => {
           event.preventDefault();
-          this.textareaInteractor.value = text;
-          this.textareaInteractor.focus();
+          this.composer.textarea.value = text;
+          this.composer.focus();
         },
       }
     );
@@ -413,8 +469,8 @@ export default class ChatComposer extends Component {
       key: ":",
       afterComplete: (text, event) => {
         event.preventDefault();
-        this.textareaInteractor.value = text;
-        this.textareaInteractor.focus();
+        this.composer.textarea.value = text;
+        this.composer.focus();
       },
       treatAsTextarea: true,
       onKeyUp: (text, cp) => {
@@ -532,5 +588,14 @@ export default class ChatComposer extends Component {
 
   #isAutocompleteDisplayed() {
     return document.querySelector(".autocomplete");
+  }
+
+  #deleteEmptyMessage() {
+    new ChatMessageInteractor(
+      getOwner(this),
+      this.currentMessage,
+      this.context
+    ).delete();
+    this.reset(this.args.channel, this.args.thread);
   }
 }

@@ -222,9 +222,9 @@ et:
       other: "%{count} sümbolit"
     related_messages:
       title: "Seotud sõnumid"
+      pill: "Seotud sõnumid"
       see_all: 'Vaata <a href="%{path}">kõiki sõnumeid</a> kasutajalt @%{username}...'
     suggested_topics:
-      title: "Soovitatud teemad"
       pm_title: "Soovitatud sõnumid"
     about:
       simple_title: "Teave"
@@ -1193,8 +1193,6 @@ et:
       sign_up: "Liitu"
       hide_forever: "tänan, ei"
     summary:
-      enabled_description: "Vaatad selle teema kokkuvõtet: kõige huvipakkuvamad postitused valib kogukond."
-      enable: "Võta see teema kokku"
       disable: "Näita kõiki postitusi"
     deleted_filter:
       enabled_description: "See teema sisaldab kustutatud postitusi, mis on peidetud."
@@ -1712,7 +1710,6 @@ et:
           "3_2": "Sulle saabuvad teavitused kuna jälgid seda teemat."
           "3_1": "Sulle saabuvad teavitused kuna lõid selle teema."
           "3": "Sulle saabuvad teavitused kuna jälgid seda teemat."
-          "2": 'You will see a count of new replies because you <a href="%{basePath}/u/%{username}/preferences/notifications">read this topic</a>.'
           "1_2": "Sind teavitatakse, kui keegi Teie @name mainib või Teile vastab."
           "1": "Sind teavitatakse, kui keegi Sinu @name mainib või Sulle vastab."
           "0_7": "Eirad kõiki teavitusi selles foorumis."
@@ -2054,7 +2051,6 @@ et:
       filtered_replies:
         viewing_posts_by: "Vaatad %{post_count} sõnumit autorilt"
         viewing_subset: "Mõned vastused on peidetud"
-        viewing_summary: "Vaatad teema kokkuvõtet"
         show_all: "Näita kõiki"
     category:
       none: "(foorum puudub)"
@@ -2309,6 +2305,9 @@ et:
           one: "Uus (%{count})"
           other: "Uusi (%{count})"
         help: "viimase paari päeva jooksul loodud teemad"
+        all: "Kõik"
+        topics: "Teemasid"
+        replies: "Vastused"
       posted:
         title: "Minu"
         help: "minu postitustega teemad"
@@ -2404,7 +2403,6 @@ et:
         one: "Teenis selle märgise %{count} kord"
         other: "Teenis selle märgise %{count} korda"
       granted_on: "Märgistatud %{date}"
-      others_count: "Teised selle märgisega (%{count})"
       title: Märgised
       badge_count:
         one: "%{count} märgis"
@@ -2412,9 +2410,6 @@ et:
       more_badges:
         one: "+%{count} veel"
         other: "+%{count} veel"
-      granted:
-        one: "%{count} lubatud"
-        other: "%{count} lubatud"
       select_badge_for_title: Vali märgis, mida kasutada oma pealkirjana
       none: "(pole)"
       badge_grouping:
@@ -2514,6 +2509,9 @@ et:
         other: "%{count} uut"
       more: "Veel"
       all_categories: "Kõik foorumid"
+      edit_navigation_modal_form:
+        filter_dropdown:
+          all: "Kõik"
       sections:
         custom:
           save: "Salvesta"
@@ -2540,7 +2538,8 @@ et:
         categories:
           header_link_text: "Liigid"
         community:
-          header_link_text: "Kogukond"
+          edit_section:
+            header_dropdown: "Kohanda"
           links:
             about:
               content: "Teave"
@@ -2548,6 +2547,8 @@ et:
               content: "Admin"
             badges:
               content: "Märgised"
+            topics:
+              content: "Teemasid"
             faq:
               content: "KKK"
             groups:
@@ -2558,6 +2559,11 @@ et:
               content: "Minu"
             review:
               content: "Vaata üle"
+    form_templates:
+      errors:
+        typeMismatch:
+          default: "Palun sisesta korrektne väärtus."
+          email: "Sisesta palun korrektne meiliaadress."
   admin_js:
     type_to_filter: "filtreerimiseks trüki..."
     admin:
@@ -2858,6 +2864,7 @@ et:
           create: "Loo"
           create_type: "Liik"
           create_name: "Nimi"
+          save: "Salvesta"
           edit: "Muuda"
           common: "Tavaline"
           desktop: "Töölaud"
@@ -3165,6 +3172,8 @@ et:
               key: "miinimum"
             maximum:
               key: "maksimum"
+            type:
+              key: "tüüp"
       impersonate:
         title: "Kehasta"
         help: "Kasuta seda töövahendit kasutajakonto ülevõtmiseks silumise eesmärgil. Tühistamiseks pead välja logima."
@@ -3396,6 +3405,8 @@ et:
         go_back: "Tagasi otsingusse"
         recommended: "Soovitame järgnevat teksti oma vajadustele vastavalt kohandada:"
         show_overriden: "Näita vaid käsitsi muudetuid"
+        outdated:
+          dismiss: "Ignoreeri"
       settings:
         show_overriden: "Näita vaid käsitsi muudetuid"
         reset: "lähtesta"

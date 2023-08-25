@@ -1,12 +1,10 @@
 import Service, { inject as service } from "@ember/service";
-import EmberObject from "@ember/object";
 import ChatMessage from "discourse/plugins/chat/discourse/models/chat-message";
+import ChatMessageMentionWarning from "discourse/plugins/chat/discourse/models/chat-message-mention-warning";
 import { cloneJSON } from "discourse-common/lib/object";
 import { bind } from "discourse-common/utils/decorators";
 
-// TODO (martin) This export can be removed once we move the handleSentMessage
-// code completely out of ChatLivePane
-export function handleStagedMessage(messagesManager, data) {
+export function handleStagedMessage(channel, messagesManager, data) {
   const stagedMessage = messagesManager.findStagedMessage(data.staged_id);
 
   if (!stagedMessage) {
@@ -17,22 +15,9 @@ export function handleStagedMessage(messagesManager, data) {
   stagedMessage.id = data.chat_message.id;
   stagedMessage.staged = false;
   stagedMessage.excerpt = data.chat_message.excerpt;
-  stagedMessage.threadId = data.chat_message.thread_id;
-  stagedMessage.channelId = data.chat_message.chat_channel_id;
-  stagedMessage.createdAt = data.chat_message.created_at;
-
-  const inReplyToMsg = messagesManager.findMessage(
-    data.chat_message.in_reply_to?.id
-  );
-  if (inReplyToMsg && !inReplyToMsg.threadId) {
-    inReplyToMsg.threadId = data.chat_message.thread_id;
-  }
-
-  // some markdown is cooked differently on the server-side, e.g.
-  // quotes, avatar images etc.
-  if (data.chat_message?.cooked !== stagedMessage.cooked) {
-    stagedMessage.cooked = data.chat_message.cooked;
-  }
+  stagedMessage.channel = channel;
+  stagedMessage.createdAt = new Date(data.chat_message.created_at);
+  stagedMessage.cooked = data.chat_message.cooked;
 
   return stagedMessage;
 }
@@ -40,7 +25,7 @@ export function handleStagedMessage(messagesManager, data) {
 /**
  * Handles subscriptions for MessageBus messages sent from Chat::Publisher
  * to the channel and thread panes. There are individual services for
- * each (ChatChannelPaneSubscriptionsManager and ChatChannelThreadPaneSubscriptionsManager)
+ * each (ChatChannelPaneSubscriptionsManager and ChatThreadPaneSubscriptionsManager)
  * that implement their own logic where necessary. Functions which will
  * always be different between the two raise a "not implemented" error in
  * the base class, and the child class must define the associated function,
@@ -52,6 +37,7 @@ export function handleStagedMessage(messagesManager, data) {
 export default class ChatPaneBaseSubscriptionsManager extends Service {
   @service chat;
   @service currentUser;
+  @service chatStagedThreadMapping;
 
   get messageBusChannel() {
     throw "not implemented";
@@ -79,14 +65,13 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
     if (!this.model) {
       return;
     }
+
     this.messageBus.unsubscribe(this.messageBusChannel, this.onMessage);
     this.model = null;
   }
 
-  // TODO (martin) This can be removed once we move the handleSentMessage
-  // code completely out of ChatLivePane
-  handleStagedMessageInternal(data) {
-    return handleStagedMessage(this.messagesManager, data);
+  handleStagedMessageInternal(channel, data) {
+    return handleStagedMessage(channel, this.messagesManager, data);
   }
 
   @bind
@@ -126,10 +111,13 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
         this.handleFlaggedMessage(busData);
         break;
       case "thread_created":
-        this.handleThreadCreated(busData);
+        this.handleNewThreadCreated(busData);
         break;
       case "update_thread_original_message":
         this.handleThreadOriginalMessageUpdate(busData);
+        break;
+      case "notice":
+        this.handleNotice(busData);
         break;
     }
   }
@@ -142,13 +130,7 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
     const message = this.messagesManager.findMessage(data.chat_message.id);
     if (message) {
       message.cooked = data.chat_message.cooked;
-      message.incrementVersion();
-      this.afterProcessedMessage(message);
     }
-  }
-
-  afterProcessedMessage() {
-    throw "not implemented";
   }
 
   handleReactionMessage(data) {
@@ -166,7 +148,6 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
       message.excerpt = data.chat_message.excerpt;
       message.uploads = cloneJSON(data.chat_message.uploads || []);
       message.edited = true;
-      message.incrementVersion();
     }
   }
 
@@ -196,10 +177,13 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
 
     if (this.currentUser.staff || this.currentUser.id === targetMsg.user.id) {
       targetMsg.deletedAt = data.deleted_at;
+      targetMsg.deletedById = data.deleted_by_id;
       targetMsg.expanded = false;
     } else {
       this.messagesManager.removeMessage(targetMsg);
     }
+
+    this._afterDeleteMessage(targetMsg, data);
   }
 
   handleRestoreMessage(data) {
@@ -207,16 +191,16 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
     if (message) {
       message.deletedAt = null;
     } else {
-      this.messagesManager.addMessages([
-        ChatMessage.create(this.args.channel, data.chat_message),
-      ]);
+      const newMessage = ChatMessage.create(this.model, data.chat_message);
+      newMessage.manager = this.messagesManager;
+      this.messagesManager.addMessages([newMessage]);
     }
   }
 
   handleMentionWarning(data) {
     const message = this.messagesManager.findMessage(data.chat_message_id);
     if (message) {
-      message.mentionWarning = EmberObject.create(data);
+      message.mentionWarning = ChatMessageMentionWarning.create(message, data);
     }
   }
 
@@ -234,11 +218,55 @@ export default class ChatPaneBaseSubscriptionsManager extends Service {
     }
   }
 
-  handleThreadCreated() {
-    throw "not implemented";
+  handleNewThreadCreated(data) {
+    this.model.threadsManager
+      .find(this.model.id, data.staged_thread_id, { fetchIfNotFound: false })
+      .then((stagedThread) => {
+        if (stagedThread) {
+          this.chatStagedThreadMapping.setMapping(
+            data.thread_id,
+            stagedThread.id
+          );
+          stagedThread.staged = false;
+          stagedThread.id = data.thread_id;
+          stagedThread.originalMessage.thread = stagedThread;
+          stagedThread.originalMessage.thread.preview.replyCount ??= 1;
+
+          // We have to do this because the thread manager cache is keyed by
+          // staged_thread_id, but the thread_id is what we want to use to
+          // look up the thread, otherwise calls to .find() will not return
+          // the thread by its actual ID, and we will end up with double-ups
+          // in places like the thread list when .add() is called.
+          this.model.threadsManager.remove({ id: data.staged_thread_id });
+          this.model.threadsManager.add(this.model, stagedThread, {
+            replace: true,
+          });
+        } else if (data.thread_id) {
+          this.model.threadsManager
+            .find(this.model.id, data.thread_id, { fetchIfNotFound: true })
+            .then((thread) => {
+              const channelOriginalMessage =
+                this.model.messagesManager.findMessage(
+                  thread.originalMessage.id
+                );
+
+              if (channelOriginalMessage) {
+                channelOriginalMessage.thread = thread;
+              }
+            });
+        }
+      });
   }
 
   handleThreadOriginalMessageUpdate() {
+    throw "not implemented";
+  }
+
+  handleNotice() {
+    throw "not implemented";
+  }
+
+  _afterDeleteMessage() {
     throw "not implemented";
   }
 }

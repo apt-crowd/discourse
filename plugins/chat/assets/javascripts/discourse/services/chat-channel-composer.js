@@ -1,23 +1,25 @@
-import { tracked } from "@glimmer/tracking";
 import Service, { inject as service } from "@ember/service";
 import { action } from "@ember/object";
 import ChatMessage from "discourse/plugins/chat/discourse/models/chat-message";
+import { tracked } from "@glimmer/tracking";
 
 export default class ChatChannelComposer extends Service {
   @service chat;
-  @service chatApi;
-  @service chatComposerPresenceManager;
   @service currentUser;
+  @service router;
+  @service("chat-thread-composer") threadComposer;
 
-  @tracked _message;
+  @tracked message;
+  @tracked textarea;
 
   @action
-  cancel() {
-    if (this.message.editing) {
-      this.reset();
-    } else if (this.message.inReplyTo) {
-      this.message.inReplyTo = null;
-    }
+  focus(options = {}) {
+    this.textarea?.focus(options);
+  }
+
+  @action
+  blur() {
+    this.textarea.blur();
   }
 
   @action
@@ -28,33 +30,44 @@ export default class ChatChannelComposer extends Service {
   }
 
   @action
-  clear() {
-    this.message.message = "";
+  cancel() {
+    if (this.message.editing) {
+      this.reset(this.message.channel);
+    } else if (this.message.inReplyTo) {
+      this.message.inReplyTo = null;
+    }
+
+    this.focus({ ensureAtEnd: true, refreshHeight: true });
   }
 
   @action
-  editMessage(message) {
+  edit(message) {
     this.chat.activeMessage = null;
     message.editing = true;
     this.message = message;
+    this.focus({ refreshHeight: true, ensureAtEnd: true });
   }
 
   @action
-  onCancelEditing() {
-    this.reset();
-  }
-
-  @action
-  replyTo(message) {
+  async replyTo(message) {
     this.chat.activeMessage = null;
-    this.message.inReplyTo = message;
-  }
 
-  get message() {
-    return this._message;
-  }
+    if (message.channel.threadingEnabled) {
+      if (!message.thread?.id) {
+        message.thread = message.channel.createStagedThread(message);
+      }
 
-  set message(message) {
-    this._message = message;
+      this.reset(message.channel);
+
+      await this.router.transitionTo(
+        "chat.channel.thread",
+        ...message.thread.routeModels
+      );
+
+      this.threadComposer.focus({ ensureAtEnd: true, refreshHeight: true });
+    } else {
+      this.message.inReplyTo = message;
+      this.focus({ ensureAtEnd: true, refreshHeight: true });
+    }
   }
 }

@@ -14,7 +14,7 @@ module Chat
       "#{root_message_bus_channel(chat_channel_id)}/thread/#{thread_id}"
     end
 
-    def self.calculate_publish_targets(channel, message)
+    def self.calculate_publish_targets(channel, message, staged_thread_id: nil)
       return [root_message_bus_channel(channel.id)] if !allow_publish_to_thread?(channel)
 
       if message.thread_om?
@@ -22,23 +22,92 @@ module Chat
           root_message_bus_channel(channel.id),
           thread_message_bus_channel(channel.id, message.thread_id),
         ]
-      elsif message.thread_reply?
-        [thread_message_bus_channel(channel.id, message.thread_id)]
+      elsif staged_thread_id || message.thread_reply?
+        targets = [thread_message_bus_channel(channel.id, message.thread_id)]
+        targets << thread_message_bus_channel(channel.id, staged_thread_id) if staged_thread_id
+        targets
       else
         [root_message_bus_channel(channel.id)]
       end
     end
 
     def self.allow_publish_to_thread?(channel)
-      SiteSetting.enable_experimental_chat_threaded_discussions && channel.threading_enabled
+      channel.threading_enabled
     end
 
-    def self.publish_new!(chat_channel, chat_message, staged_id)
-      message_bus_targets = calculate_publish_targets(chat_channel, chat_message)
+    def self.publish_new!(chat_channel, chat_message, staged_id, staged_thread_id: nil)
+      message_bus_targets =
+        calculate_publish_targets(chat_channel, chat_message, staged_thread_id: staged_thread_id)
       publish_to_targets!(
         message_bus_targets,
         chat_channel,
-        serialize_message_with_type(chat_message, :sent).merge(staged_id: staged_id),
+        serialize_message_with_type(chat_message, :sent).merge(
+          staged_id: staged_id,
+          staged_thread_id: staged_thread_id,
+        ),
+      )
+
+      if !chat_message.thread_reply? || !allow_publish_to_thread?(chat_channel)
+        MessageBus.publish(
+          self.new_messages_message_bus_channel(chat_channel.id),
+          {
+            type: "channel",
+            channel_id: chat_channel.id,
+            thread_id: chat_message.thread_id,
+            message:
+              Chat::MessageSerializer.new(
+                chat_message,
+                { scope: anonymous_guardian, root: false },
+              ).as_json,
+          },
+        )
+      end
+
+      if chat_message.thread_reply? && allow_publish_to_thread?(chat_channel)
+        MessageBus.publish(
+          self.new_messages_message_bus_channel(chat_channel.id),
+          {
+            type: "thread",
+            channel_id: chat_channel.id,
+            thread_id: chat_message.thread_id,
+            message:
+              Chat::MessageSerializer.new(
+                chat_message,
+                { scope: anonymous_guardian, root: false },
+              ).as_json,
+          },
+          permissions(chat_channel),
+        )
+
+        publish_thread_original_message_metadata!(chat_message.thread)
+      end
+    end
+
+    def self.publish_thread_original_message_metadata!(thread)
+      preview =
+        ::Chat::ThreadPreviewSerializer.new(
+          thread,
+          participants: ::Chat::ThreadParticipantQuery.call(thread_ids: [thread.id])[thread.id],
+          root: false,
+        ).as_json
+      publish_to_channel!(
+        thread.channel,
+        {
+          type: :update_thread_original_message,
+          original_message_id: thread.original_message_id,
+          preview: preview.as_json,
+        },
+      )
+    end
+
+    def self.publish_thread_created!(chat_channel, chat_message, thread_id, staged_thread_id)
+      publish_to_channel!(
+        chat_channel,
+        serialize_message_with_type(
+          chat_message,
+          :thread_created,
+          { thread_id: thread_id, staged_thread_id: staged_thread_id },
+        ),
       )
 
       # NOTE: This means that the read count is only updated in the client
@@ -123,10 +192,22 @@ module Chat
 
     def self.publish_delete!(chat_channel, chat_message)
       message_bus_targets = calculate_publish_targets(chat_channel, chat_message)
+      latest_not_deleted_message_id =
+        if chat_message.thread_reply? && chat_channel.threading_enabled
+          chat_message.thread.latest_not_deleted_message_id(anchor_message_id: chat_message.id)
+        else
+          chat_channel.latest_not_deleted_message_id(anchor_message_id: chat_message.id)
+        end
       publish_to_targets!(
         message_bus_targets,
         chat_channel,
-        { type: "delete", deleted_id: chat_message.id, deleted_at: chat_message.deleted_at },
+        {
+          type: "delete",
+          deleted_id: chat_message.id,
+          deleted_at: chat_message.deleted_at,
+          deleted_by_id: chat_message.deleted_by_id,
+          latest_not_deleted_message_id: latest_not_deleted_message_id,
+        },
       )
     end
 
@@ -215,28 +296,53 @@ module Chat
       end
     end
 
-    def self.serialize_message_with_type(chat_message, type)
+    def self.serialize_message_with_type(chat_message, type, options = {})
       Chat::MessageSerializer
         .new(chat_message, { scope: anonymous_guardian, root: :chat_message })
         .as_json
         .merge(type: type)
+        .merge(options)
     end
 
     def self.user_tracking_state_message_bus_channel(user_id)
       "/chat/user-tracking-state/#{user_id}"
     end
 
-    def self.publish_user_tracking_state(user, chat_channel_id, chat_message_id)
+    def self.publish_user_tracking_state!(user, channel, message)
       data = {
-        channel_id: chat_channel_id,
-        last_read_message_id: chat_message_id,
-        # TODO (martin) Remove old chat_channel_id and chat_message_id keys here once deploys have cycled,
-        # this will prevent JS errors from clients that are looking for the old payload.
-        chat_channel_id: chat_channel_id,
-        chat_message_id: chat_message_id,
-      }.merge(
-        Chat::ChannelUnreadsQuery.call(channel_ids: [chat_channel_id], user_id: user.id).first.to_h,
-      )
+        channel_id: channel.id,
+        last_read_message_id: message.id,
+        thread_id: message.thread_id,
+      }
+
+      channel_tracking_data =
+        Chat::TrackingStateReportQuery.call(
+          guardian: user.guardian,
+          channel_ids: [channel.id],
+          include_missing_memberships: true,
+        ).find_channel(channel.id)
+
+      data.merge!(channel_tracking_data)
+
+      # Need the thread unread overview if channel has threading enabled
+      # and a message is sent in the thread. We also need to pass the actual
+      # thread tracking state.
+      if channel.threading_enabled && message.thread_reply?
+        data[:unread_thread_overview] = ::Chat::TrackingStateReportQuery.call(
+          guardian: user.guardian,
+          channel_ids: [channel.id],
+          include_threads: true,
+          include_read: false,
+          include_last_reply_details: true,
+        ).find_channel_thread_overviews(channel.id)
+
+        data[:thread_tracking] = ::Chat::TrackingStateReportQuery.call(
+          guardian: user.guardian,
+          thread_ids: [message.thread_id],
+          include_threads: true,
+          include_missing_memberships: true,
+        ).find_thread(message.thread_id)
+      end
 
       MessageBus.publish(
         self.user_tracking_state_message_bus_channel(user.id),
@@ -249,17 +355,20 @@ module Chat
       "/chat/bulk-user-tracking-state/#{user_id}"
     end
 
-    def self.publish_bulk_user_tracking_state(user, channel_last_read_map)
-      unread_data =
-        Chat::ChannelUnreadsQuery.call(
+    def self.publish_bulk_user_tracking_state!(user, channel_last_read_map)
+      tracking_data =
+        Chat::TrackingState.call(
+          guardian: Guardian.new(user),
           channel_ids: channel_last_read_map.keys,
-          user_id: user.id,
-        ).map(&:to_h)
+          include_missing_memberships: true,
+        )
+      if tracking_data.failure?
+        raise StandardError,
+              "Tracking service failed when trying to publish bulk tracking state:\n\n#{tracking_data.inspect_steps}"
+      end
 
       channel_last_read_map.each do |key, value|
-        channel_last_read_map[key] = value.merge(
-          unread_data.find { |data| data[:channel_id] == key }.except(:channel_id),
-        )
+        channel_last_read_map[key] = value.merge(tracking_data.report.find_channel(key))
       end
 
       MessageBus.publish(
@@ -288,23 +397,26 @@ module Chat
     NEW_CHANNEL_MESSAGE_BUS_CHANNEL = "/chat/new-channel"
 
     def self.publish_new_channel(chat_channel, users)
-      users.each do |user|
-        # FIXME: This could generate a lot of queries depending on the amount of users
-        membership = chat_channel.membership_for(user)
+      Chat::UserChatChannelMembership
+        .includes(:user)
+        .where(chat_channel: chat_channel, user: users)
+        .find_in_batches do |memberships|
+          memberships.each do |membership|
+            serialized_channel =
+              Chat::ChannelSerializer.new(
+                chat_channel,
+                scope: membership.user.guardian, # We need a guardian here for direct messages
+                root: :channel,
+                membership: membership,
+              ).as_json
 
-        # TODO: this event is problematic as some code will update the membership before calling it
-        # and other code will update it after calling it
-        # it means frontend must handle logic for both cases
-        serialized_channel =
-          Chat::ChannelSerializer.new(
-            chat_channel,
-            scope: Guardian.new(user), # We need a guardian here for direct messages
-            root: :channel,
-            membership: membership,
-          ).as_json
-
-        MessageBus.publish(NEW_CHANNEL_MESSAGE_BUS_CHANNEL, serialized_channel, user_ids: [user.id])
-      end
+            MessageBus.publish(
+              NEW_CHANNEL_MESSAGE_BUS_CHANNEL,
+              serialized_channel,
+              user_ids: [membership.user.id],
+            )
+          end
+        end
     end
 
     def self.publish_inaccessible_mentions(
@@ -313,7 +425,8 @@ module Chat
       cannot_chat_users,
       without_membership,
       too_many_members,
-      mentions_disabled
+      mentions_disabled,
+      global_mentions_disabled
     )
       MessageBus.publish(
         "/chat/#{chat_message.chat_channel_id}",
@@ -325,6 +438,7 @@ module Chat
             without_membership.map { |u| { username: u.username, id: u.id } }.as_json,
           groups_with_too_many_members: too_many_members.map(&:name).as_json,
           group_mentions_disabled: mentions_disabled.map(&:name).as_json,
+          global_mentions_disabled: global_mentions_disabled,
         },
         user_ids: [user_id],
       )
@@ -394,6 +508,12 @@ module Chat
         },
         permissions(chat_channel),
       )
+    end
+
+    def self.publish_notice(user_id:, channel_id:, text_content:)
+      payload = { type: "notice", text_content: text_content, channel_id: channel_id }
+
+      MessageBus.publish("/chat/#{channel_id}", payload, user_ids: [user_id])
     end
 
     private

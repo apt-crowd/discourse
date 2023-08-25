@@ -18,7 +18,7 @@ da:
       no_day: "%B %Y"
   date:
     month_names:
-    - null
+    -
     - Januar
     - Februar
     - Marts
@@ -179,9 +179,6 @@ da:
       load_from_remote: "Der opstod en fejl ved indlæsningen af dette indlæg."
     site_settings:
       invalid_category_id: "Du angav en kategori, der ikke findes"
-      invalid_choice:
-        one: "Du angav det ugyldige valg %{name}"
-        other: "Du angav de ugyldige valg %{name}"
       default_categories_already_selected: "Du kan ikke vælge en kategori der er brugt i en anden liste."
       default_tags_already_selected: "Du kan ikke vælge et mærke, der bruges i en anden liste."
       s3_upload_bucket_is_required: "Du kan ikke aktivere overførsler til S3 med mindre du har angivet 's3_upload_bucket'."
@@ -561,21 +558,6 @@ da:
   meta_category_description: "Diskussion om dette websted, hvordan det er organiseret, hvordan det virker og hvordan vi kan forbedre det."
   staff_category_name: "Personale"
   staff_category_description: "Privat kategori for personale diskussioner. Emner er kun synlige for administratorer og moderatorer."
-  discourse_welcome_topic:
-    body: |2
-
-      Det første afsnit af dette fastgjorte emne vil kunne ses som en velkomstbesked for alle nye besøgende på din hjemmeside. Dette er vigtigt!
-
-      **Redigér dette** til en kortfattet beskrivelse af dit fællesskab:
-
-      - Hvem er det rettet mod?
-      - Hvad kan de finde her?
-      - Hvorfor bør de komme her?
-      - Hvor finde de mere information (links, ressourcer, osv.)?
-      <img src="%{base_path}/images/welcome/discourse-edit-post-animated.gif" width="508" height="106">
-
-      Du bør eventuelt lukke dette emne via administratorfunktionen :wrench: (øverst til højre og i bunden), således at der ikke hober sig svar op til denne meddelelse.
-  admin_quick_start_title: "LÆS ME FØRST: Admin Quick Start Guide"
   category:
     topic_prefix: "Kategoridefinition for %{category}"
     replace_paragraph: "(Erstat dette første afsnit med en kort beskrivelse af din nye kategori. Denne vejledning vises i kategoriudvælgelsesområdet, så prøv at holde det under 200 tegn)."
@@ -1250,7 +1232,6 @@ da:
         qtt_like: Likes modtaget
       description: "Top 10 over brugere, der har fået 'Synes godt om' fra en lang række personer."
   dashboard:
-    group_email_credentials_warning: 'Der opstod et problem med e-mail-legitimationsoplysninger for gruppen <a href="%{base_path}/g/%{group_name}/manage/email">%{group_full_name}</a>. Ingen e-mails vil blive sendt fra gruppe-indbakken, før problemet er løst. %{error}'
     rails_env_warning: "Din server kører i %{env}-tilstand."
     host_names_warning: "Din config/database.yml fil bruger standardnavnet localhost som værtsnavn. Opdatér den med webstedets værtsnavn."
     sidekiq_warning: 'Sidekiq kører ikke. Mange opgaver, som f.eks. udsendelse af e-mails, afvikles asynkront af sidekiq. Du skal sikre dig at der kører mindst én sidekiq-proces. <a href="https://github.com/mperham/sidekiq" target="_blank">Læs mere om Sidekiq her</a>.'
@@ -1378,8 +1359,6 @@ da:
     allowed_crawler_user_agents: "Brugeragenter for webcrawlere, der skal have adgang til webstedet. ADVARSEL! INDSTILLES DETTE VIL ALLE CRAWLERE, DER IKKE ER ANGIVET HER BLIVE NÆGTET!"
     blocked_crawler_user_agents: "Entydigt store og små bogstaver i brugeragentstrengen, der identificerer webcrawlere, der ikke skal have adgang til webstedet. Gælder ikke, hvis tilladelsesliste er defineret."
     slow_down_crawler_rate: "Hvis der er angivet slow_down_crawler_user_agents, gælder denne sats for alle crawlere (antal sekunders forsinkelse mellem anmodninger)"
-    content_security_policy: "Aktivér indholds-sikkerheds-politik"
-    content_security_policy_report_only: "Aktivér indholds-sikkerheds-politik-kun-rapportering"
     content_security_policy_collect_reports: "Aktivér CSP-overtrædelsesrapportindsamling på /csp_reports"
     invalidate_inactive_admin_email_after_days: "Administratorkonti, der ikke har besøgt webstedet i dette antal dage, skal validere deres e-mailadresse igen, før de logger ind. Indstil til til 0 for at deaktivere."
     top_menu: "Afklar hvilke ting fremgår af sidens navigations bar, og i hvilken rækkefølge. Eksempel: latest|new|unread|categories|top|read|posted|bookmarks"
@@ -1493,7 +1472,6 @@ da:
     tl3_requires_max_flagged: "Brugere må ikke have mere end x indlæg anmeldt af x forskellige brugere i løbet a de sidste (tl3 time period) dage for at kvalificere sig til forfremmelse til tillidsniveau 3. Hvor x er indstillingens værdi (0 eller mere)."
     tl3_promotion_min_duration: "Det mindste antal dage, som en forfremmelse til tillidsniveau 3 varer, før en bruger kan degraderes tilbage til tillidsniveau 2."
     tl3_links_no_follow: "Fjern ikke rel=nofollow fra links indsendt af tillidsniveau 3-brugere."
-    trusted_users_can_edit_others: "Tillad brugere med højt tillidsniveau at redigere indhold fra andre brugere"
     min_trust_to_create_topic: "Det mindste tillidsniveau der skal til for at oprette et nyt emne."
     allow_flagging_staff: "Hvis aktiveret, kan brugerne anmelde indlæg fra personalekonti."
     min_trust_to_edit_wiki_post: "Det mindste tillidsniveau, der kræves for at redigere indlæg markeret som wiki."
@@ -1613,7 +1591,6 @@ da:
     allowed_embed_selectors: "En kommasepareret liste over CSS-elementer, der er tilladt i embeds."
     embed_post_limit: "Maksimum antal indlæg, der skal indlejres."
     embed_username_required: "Brugernavnet til oprettelse af emne er påkrævet."
-    notify_about_flags_after: "Hvis der er anmeldelser, der ikke er blevet håndteret efter mange timer, skal der sendes en personlig besked til moderatorer. Sæt til 0 for at deaktivere."
     delete_drafts_older_than_n_days: "Slet kladder, der er ældre end (n) dage."
     delete_merged_stub_topics_after_days: "Antal dage, der skal ventes, før automatisk sletning af fuldt sammenflettede stub emner. Sæt til 0 for aldrig at slette stub emner."
     enable_emoji: "Aktivér humørikon"
@@ -1645,7 +1622,6 @@ da:
     default_tags_watching_first_post: "Liste over mærker, hvor første indlæg i hvert nyt emne vil blive overvåget som standard."
     allow_user_api_keys: "Tillad generering af bruger API nøgler"
     allow_user_api_key_scopes: "Liste over tilladte anvendelsesområder for bruger-API-nøgler"
-    min_trust_level_for_user_api_key: "Tillidsniveau påkrævet til generering af bruger API-nøgler"
     expire_user_api_keys_days: "Antal dage før en bruger API-nøgle automatisk udløber (0 for aldrig)"
     tagging_enabled: "Aktivér mærker på emner?"
     max_tags_per_topic: "Det maksimale antal mærker, der kan anvendes i et emne."
@@ -2323,9 +2299,9 @@ da:
       text_body_template: |
         Hej,
 
-        Dette er en automatisk besked fra %{site_name} at informere dig om, at @%{username} er blevet ignoreret af %{ignores_threshold} brugere. Dette kan indikere, at der er ved at udvikle sig et problem i dit fællesskab.
+        Dette er en automatisk besked fra %{site_name}, for at informere dig om, at @%{username} er blevet ignoreret af %{ignores_threshold} brugere. Dette kan indikere, at der er ved at udvikle sig et problem i dit fællesskab.
 
-        Du vil måske [gennemgå de seneste indlæg](%{base_url}/u/%{username}/resume) fra denne bruger og potentielt andre brugere i [ignoreret og tavs brugerrapport] (%{base_url}/admin/reports/top_ignored_users).
+        Du vil måske [gennemgå de seneste indlæg](%{base_url}/u/%{username}/resume) fra denne bruger og potentielt andre brugere i [ignoreret og tavs brugerrapport](%{base_url}/admin/reports/top_ignored_users).
 
         For yderligere vejledning henvises til vores [fællesskabs-retningslinjer](%{base_url}/guidelines).
     too_many_spam_flags:
@@ -2381,13 +2357,6 @@ da:
     download_remote_images_disabled:
       subject_template: "Download af eksterne billeder er slået fra"
       text_body_template: "Indstillingen `download_remote_images_to_local` blev slået fra fordi grænsen for bug af diskplads i `download_remote_images_threshold` blev nået."
-    dashboard_problems:
-      text_body_template: |
-        Vi har nogle nye råd og anbefalinger til dig baseret på dine nuværende webstedsindstillinger.
-
-        [Besøg dit webside dashboard](%{base_url}/admin) for at se det.
-
-        Hvis intet er synligt på dit dashboard, kan en anden medarbejder muligvis allerede have handlet på dette råd. En liste over medarbejderhandlinger kan findes under dine [Personale Handlingslogs] (%{base_url}/admin/logs/staff_action_logs).
     new_user_of_the_month:
       title: "Du er månedens nye bruger!"
       subject_template: "Du er månedens nye bruger!"

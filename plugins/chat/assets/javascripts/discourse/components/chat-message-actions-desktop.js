@@ -6,14 +6,19 @@ import { schedule } from "@ember/runloop";
 import { createPopper } from "@popperjs/core";
 import chatMessageContainer from "discourse/plugins/chat/discourse/lib/chat-message-container";
 import { action } from "@ember/object";
+import { tracked } from "@glimmer/tracking";
 
 const MSG_ACTIONS_VERTICAL_PADDING = -10;
+const FULL = "full";
+const REDUCED = "reduced";
+const REDUCED_WIDTH_THRESHOLD = 500;
 
 export default class ChatMessageActionsDesktop extends Component {
   @service chat;
-  @service chatStateManager;
   @service chatEmojiPickerManager;
   @service site;
+
+  @tracked size = FULL;
 
   popper = null;
 
@@ -26,17 +31,40 @@ export default class ChatMessageActionsDesktop extends Component {
   }
 
   get messageInteractor() {
-    const activeMessage = this.chat.activeMessage;
-
     return new ChatMessageInteractor(
       getOwner(this),
-      activeMessage.model,
-      activeMessage.context
+      this.message,
+      this.context
     );
   }
 
+  get shouldRenderFavoriteReactions() {
+    return this.size === FULL;
+  }
+
   @action
-  setupPopper(element) {
+  onWheel() {
+    // prevents menu to stop scroll on the list of messages
+    this.chat.activeMessage = null;
+  }
+
+  @action
+  onMouseleave(event) {
+    // if the mouse is leaving the actions menu for the actual menu, don't close it
+    // this will avoid the menu rerendering
+    if (
+      (event.toElement || event.relatedTarget)?.closest(
+        ".chat-message-container"
+      )
+    ) {
+      return;
+    }
+
+    this.chat.activeMessage = null;
+  }
+
+  @action
+  setup(element) {
     this.popper?.destroy();
 
     schedule("afterRender", () => {
@@ -44,6 +72,14 @@ export default class ChatMessageActionsDesktop extends Component {
         this.message.id,
         this.context
       );
+
+      if (!messageContainer) {
+        return;
+      }
+
+      const viewport = messageContainer.closest(".popper-viewport");
+      this.size =
+        viewport.clientWidth < REDUCED_WIDTH_THRESHOLD ? REDUCED : FULL;
 
       if (!messageContainer) {
         return;
@@ -57,7 +93,7 @@ export default class ChatMessageActionsDesktop extends Component {
             name: "flip",
             enabled: true,
             options: {
-              boundary: messageContainer.closest(".popper-viewport"),
+              boundary: viewport,
               fallbackPlacements: ["bottom-end"],
             },
           },
@@ -73,7 +109,8 @@ export default class ChatMessageActionsDesktop extends Component {
   }
 
   @action
-  teardownPopper() {
+  teardown() {
     this.popper?.destroy();
+    this.popper = null;
   }
 }

@@ -198,7 +198,7 @@ textarea {
 
   &:focus:required:invalid:focus {
     border-color: var(--danger);
-    box-shadow: shadow("focus-danger");
+    box-shadow: var(--shadow-focus-danger);
   }
 }
 
@@ -571,10 +571,6 @@ table {
     margin-bottom: 0;
     flex: 0 0 auto;
     max-width: 100%;
-  }
-
-  .control-group {
-    @include clearfix;
   }
 
   .control-label:not(.checkbox-label) {

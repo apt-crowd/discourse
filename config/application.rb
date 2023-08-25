@@ -94,7 +94,6 @@ module Discourse
     config.active_record.cache_versioning = false # our custom cache class doesn’t support this
     config.action_controller.forgery_protection_origin_check = false
     config.active_record.belongs_to_required_by_default = false
-    config.active_record.legacy_connection_handling = true
     config.active_record.yaml_column_permitted_classes = [
       Hash,
       HashWithIndifferentAccess,
@@ -167,6 +166,9 @@ module Discourse
     require "content_security_policy/middleware"
     config.middleware.swap ActionDispatch::ContentSecurityPolicy::Middleware,
                            ContentSecurityPolicy::Middleware
+
+    require "middleware/gtm_script_nonce_injector"
+    config.middleware.insert_after(ActionDispatch::Flash, Middleware::GtmScriptNonceInjector)
 
     require "middleware/discourse_public_exceptions"
     config.exceptions_app = Middleware::DiscoursePublicExceptions.new(Rails.public_path)
