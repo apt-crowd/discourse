@@ -382,12 +382,6 @@ zh_CN:
           ```text
           我可以通过输入 # 创建一个类别链接
           ```
-        not_found_experimental: |-
-          嗯，我在那里没有看到一个类别。你能在下次回复中复制这个吗？
-
-          ```text
-          我可以通过输入 # 创建一个类别链接
-          ```
         reply: |-
           漂亮！记住，这对类别_和_标签（如果已启用）都适用。
       change_topic_notification_level:

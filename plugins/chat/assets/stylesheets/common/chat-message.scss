@@ -39,23 +39,6 @@
     }
   }
 
-  &.is-threaded {
-    display: grid;
-    grid-template-columns: var(--message-left-width) 1fr;
-    grid-template-rows: auto 32px;
-    grid-template-areas:
-      "avatar message"
-      "threadindicator threadindicator";
-
-    .chat-user-avatar {
-      grid-area: avatar;
-    }
-
-    .chat-message-content {
-      grid-area: message;
-    }
-  }
-
   .chat-message-content {
     display: flex;
     flex-direction: column;
@@ -126,10 +109,6 @@
         pointer-events: none;
       }
 
-      > * {
-        pointer-events: none;
-      }
-
       .d-icon {
         color: var(--primary-high);
       }
@@ -168,41 +147,7 @@
 
   &:hover {
     .chat-message-reaction-list .chat-message-react-btn {
-      display: none;
-    }
-
-    .touch & {
-      &:active {
-        background: var(--d-hover);
-        border-radius: 5px;
-      }
-
-      &.chat-message-bookmarked {
-        &:active {
-          background: var(--highlight-low);
-        }
-      }
-    }
-
-    .no-touch & {
-      &.is-active,
-      &:hover,
-      &:active {
-        background: var(--d-hover);
-      }
-
-      &:hover {
-        .chat-message-react-btn {
-          display: inline-block;
-        }
-      }
-
-      &.chat-message-bookmarked {
-        &.is-active,
-        &:hover {
-          background: var(--highlight-medium);
-        }
-      }
+      display: inline-block;
     }
   }
 

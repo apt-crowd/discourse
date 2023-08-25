@@ -329,11 +329,6 @@ module Chat
       query
     end
 
-    def include_thread_messages?
-      params[:thread_id].present? || !SiteSetting.enable_experimental_chat_threaded_discussions ||
-        !@chat_channel.threading_enabled
-    end
-
     def find_chatable
       @chatable = Category.find_by(id: params[:chatable_id])
       guardian.ensure_can_moderate_chat!(@chatable)
@@ -346,16 +341,6 @@ module Chat
       ]
       @message = @message.find_by(id: params[:message_id])
       raise Discourse::NotFound unless @message
-    end
-
-    def exclude_thread_messages(messages)
-      messages.where(<<~SQL, channel_id: @chat_channel.id)
-        chat_messages.thread_id IS NULL OR chat_messages.id IN (
-          SELECT original_message_id
-          FROM chat_threads
-          WHERE chat_threads.channel_id = :channel_id
-        )
-      SQL
     end
   end
 end

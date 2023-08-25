@@ -71,10 +71,6 @@ export default class SidebarUserTagsSection extends Component {
     return this.currentUser.admin && !this.hasDefaultSidebarTags;
   }
 
-  get shouldDisplayDefaultConfig() {
-    return this.currentUser.admin && !this.hasDefaultSidebarTags;
-  }
-
   get hasDefaultSidebarTags() {
     return hasDefaultSidebarTags(this.siteSettings);
   }

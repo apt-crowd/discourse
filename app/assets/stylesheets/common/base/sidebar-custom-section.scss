@@ -20,12 +20,6 @@
     cursor: pointer;
   }
 
-  a {
-    -webkit-touch-callout: none !important;
-    @include unselectable;
-    cursor: pointer;
-  }
-
   .sidebar-section-wrapper.disabled {
     a {
       pointer-events: none;

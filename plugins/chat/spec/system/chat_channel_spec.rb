@@ -226,7 +226,9 @@ RSpec.describe "Chat channel", type: :system do
     it "renders text in the reply-to" do
       chat.visit_channel(channel_1)
 
-      expect(find(".chat-reply .chat-reply__excerpt")["innerHTML"].strip).to eq("not marked")
+      expect(find(".chat-reply .chat-reply__excerpt")["innerHTML"].strip).to eq(
+        "&lt;mark&gt;not marked&lt;/mark&gt;",
+      )
     end
 
     it "renders safe HTML like mentions (which are just links) in the reply-to" do

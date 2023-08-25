@@ -34,18 +34,6 @@ export default class ChannelsList extends Component {
     this.modal.show(ChatModalNewMessage);
   }
 
-  @tracked hasScrollbar = false;
-
-  @action
-  computeHasScrollbar(element) {
-    this.hasScrollbar = element.scrollHeight > element.clientHeight;
-  }
-
-  @action
-  computeResizedEntries(entries) {
-    this.computeHasScrollbar(entries[0].target);
-  }
-
   get showMobileDirectMessageButton() {
     return this.site.mobileView && this.canCreateDirectMessageChannel;
   }

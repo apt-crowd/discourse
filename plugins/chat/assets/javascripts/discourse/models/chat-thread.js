@@ -74,10 +74,6 @@ export default class ChatThread {
     return [...this.channel.routeModels, this.id];
   }
 
-  get selectedMessages() {
-    return this.messages.filter((message) => message.selected);
-  }
-
   get escapedTitle() {
     return escapeExpression(this.title);
   }

@@ -199,42 +199,6 @@ export default class ChatMessage {
     }
   }
 
-  cook() {
-    const site = getOwner(this).lookup("service:site");
-
-    const markdownOptions = {
-      featuresOverride:
-        site.markdown_additional_options?.chat?.limited_pretty_text_features,
-      markdownItRules:
-        site.markdown_additional_options?.chat
-          ?.limited_pretty_text_markdown_rules,
-      hashtagTypesInPriorityOrder:
-        site.hashtag_configurations?.["chat-composer"],
-      hashtagIcons: site.hashtag_icons,
-    };
-
-    if (ChatMessage.cookFunction) {
-      this.cooked = ChatMessage.cookFunction(this.message);
-      this.incrementVersion();
-    } else {
-      generateCookFunction(markdownOptions).then((cookFunction) => {
-        ChatMessage.cookFunction = (raw) => {
-          return simpleCategoryHashMentionTransform(
-            cookFunction(raw),
-            site.categories
-          );
-        };
-
-        this.cooked = ChatMessage.cookFunction(this.message);
-        this.incrementVersion();
-      });
-    }
-  }
-
-  get threadRouteModels() {
-    return [...this.channel.routeModels, this.threadId];
-  }
-
   get read() {
     return this.channel.currentUserMembership?.lastReadMessageId >= this.id;
   }

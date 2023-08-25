@@ -138,10 +138,6 @@ export default class ChatChannel {
     return this.meta.can_moderate;
   }
 
-  get canLoadMoreFuture() {
-    return this.messagesManager.canLoadMoreFuture;
-  }
-
   get escapedTitle() {
     return escapeExpression(this.title);
   }
@@ -156,10 +152,6 @@ export default class ChatChannel {
 
   get routeModels() {
     return [this.slugifiedTitle, this.id];
-  }
-
-  get selectedMessages() {
-    return this.messages.filter((message) => message.selected);
   }
 
   get isDirectMessageChannel() {
@@ -231,27 +223,6 @@ export default class ChatChannel {
     }
 
     message.manager = this.messagesManager;
-  }
-
-  stageMessage(message) {
-    message.id = guid();
-    message.staged = true;
-    message.draft = false;
-    message.createdAt ??= moment.utc().format();
-    message.cook();
-
-    if (message.inReplyTo) {
-      if (!message.inReplyTo.threadId) {
-        message.inReplyTo.threadId = guid();
-        message.inReplyTo.threadReplyCount = 1;
-      }
-
-      if (!this.threadingEnabled) {
-        this.messagesManager.addMessages([message]);
-      }
-    } else {
-      this.messagesManager.addMessages([message]);
-    }
   }
 
   canModifyMessages(user) {

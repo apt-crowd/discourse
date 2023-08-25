@@ -194,6 +194,4 @@ Fabricator(:user_chat_thread_membership, class_name: "Chat::UserChatThreadMember
       chat_channel: membership.thread.channel,
     ).update!(following: true)
   end
-
-  after_create { |thread| thread.original_message.update!(thread_id: thread.id) }
 end

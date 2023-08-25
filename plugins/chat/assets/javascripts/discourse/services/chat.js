@@ -30,7 +30,6 @@ export default class Chat extends Service {
   @service presence;
   @service router;
   @service site;
-
   @service chatChannelsManager;
   @service chatTrackingStateManager;
 

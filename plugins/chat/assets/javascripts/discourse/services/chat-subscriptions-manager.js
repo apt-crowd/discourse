@@ -164,34 +164,6 @@ export default class ChatSubscriptionsManager extends Service {
     });
   }
 
-  @bind
-  _onKickFromChannel(busData) {
-    this.chatChannelsManager.find(busData.channel_id).then((channel) => {
-      if (this.chat.activeChannel.id === channel.id) {
-        this.dialog.alert({
-          message: I18n.t("chat.kicked_from_channel"),
-          didConfirm: () => {
-            this.chatChannelsManager.remove(channel);
-
-            const firstChannel =
-              this.chatChannelsManager.publicMessageChannels[0];
-
-            if (firstChannel) {
-              this.router.transitionTo(
-                "chat.channel",
-                ...firstChannel.routeModels
-              );
-            } else {
-              this.router.transitionTo("chat.browse");
-            }
-          },
-        });
-      } else {
-        this.chatChannelsManager.remove(channel);
-      }
-    });
-  }
-
   _startChannelNewMessagesSubscription(channel) {
     this.messageBus.subscribe(
       `/chat/${channel.id}/new-messages`,

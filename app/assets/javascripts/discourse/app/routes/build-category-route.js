@@ -17,7 +17,6 @@ import I18n from "I18n";
 import TopicList from "discourse/models/topic-list";
 import { action } from "@ember/object";
 import PreloadStore from "discourse/lib/preload-store";
-import { inject as service } from "@ember/service";
 
 class AbstractCategoryRoute extends DiscourseRoute {
   @service composer;

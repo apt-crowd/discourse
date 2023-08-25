@@ -7,8 +7,6 @@ module Chat
 
     include Chat::ThreadCache
 
-    include Chat::ThreadCache
-
     self.table_name = "chat_threads"
 
     belongs_to :channel, foreign_key: "channel_id", class_name: "Chat::Channel"

@@ -158,7 +158,6 @@ describe "Custom sidebar sections", type: :system do
 
     sign_in user
 
-    sign_in user
     visit("/latest")
 
     expect(sidebar.primary_section_links("my-section")).to eq(

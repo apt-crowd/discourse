@@ -979,15 +979,5 @@ acceptance(
       await click(".new-private-message");
       assert.ok(exists("#reply-control .mini-tag-chooser"));
     });
-
-    test("viewing group inbox", async function (assert) {
-      await visit("/u/charlie/messages/group/awesome_group");
-
-      assert.strictEqual(
-        query(".user-nav-messages-dropdown .selected-name").textContent.trim(),
-        "awesome_group",
-        "dropdown menu displays the right group name"
-      );
-    });
   }
 );

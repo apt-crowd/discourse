@@ -15,16 +15,6 @@ export function resetUserMenuProfileTabItems() {
   _extraItems.clear();
 }
 
-const _extraItems = [];
-
-export function addUserMenuProfileTabItem(item) {
-  _extraItems.push(item);
-}
-
-export function resetUserMenuProfileTabItems() {
-  _extraItems.clear();
-}
-
 export default class UserMenuProfileTabContent extends Component {
   @service currentUser;
   @service siteSettings;

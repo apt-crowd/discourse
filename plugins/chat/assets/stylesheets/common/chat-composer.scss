@@ -109,17 +109,6 @@
       outline: none;
     }
 
-    @include chat-scrollbar();
-
-    &[disabled] {
-      background: none;
-    }
-
-    &:focus,
-    &:active {
-      outline: none;
-    }
-
     &:placeholder-shown,
     &::placeholder {
       overflow: hidden;

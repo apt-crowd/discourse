@@ -109,38 +109,6 @@ module Chat
           { thread_id: thread_id, staged_thread_id: staged_thread_id },
         ),
       )
-
-      # NOTE: This means that the read count is only updated in the client
-      # for new messages in the main channel stream, maybe in future we want to
-      # do this for thread messages as well?
-      if !chat_message.thread_reply? || !allow_publish_to_thread?(chat_channel)
-        MessageBus.publish(
-          self.new_messages_message_bus_channel(chat_channel.id),
-          {
-            channel_id: chat_channel.id,
-            message_id: chat_message.id,
-            user_id: chat_message.user.id,
-            username: chat_message.user.username,
-            thread_id: chat_message.thread_id,
-          },
-          permissions(chat_channel),
-        )
-      end
-    end
-
-    def self.publish_thread_original_message_metadata!(thread)
-      publish_to_channel!(
-        thread.channel,
-        {
-          type: :update_thread_original_message,
-          original_message_id: thread.original_message_id,
-          replies_count: thread.replies_count_cache,
-        },
-      )
-    end
-
-    def self.publish_thread_created!(chat_channel, chat_message)
-      publish_to_channel!(chat_channel, serialize_message_with_type(chat_message, :thread_created))
     end
 
     def self.publish_processed!(chat_message)

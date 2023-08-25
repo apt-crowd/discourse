@@ -123,15 +123,6 @@ export default {
       }
     };
 
-    const markAllChannelsRead = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (chatStateManager.isActive) {
-        chatChannelsManager.markAllChannelsRead();
-      }
-    };
-
     withPluginApi("0.12.1", (api) => {
       api.addKeyboardShortcut(
         `${PLATFORM_KEY_MODIFIER}+k`,

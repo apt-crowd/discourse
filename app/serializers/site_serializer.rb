@@ -300,17 +300,6 @@ class SiteSerializer < ApplicationSerializer
     scope.anonymous?
   end
 
-  def anonymous_sidebar_sections
-    SidebarSection
-      .public_sections
-      .includes(sidebar_section_links: :linkable)
-      .map { |section| SidebarSectionSerializer.new(section, root: false) }
-  end
-
-  def include_anonymous_sidebar_sections?
-    scope.anonymous?
-  end
-
   def whispers_allowed_groups_names
     Group.where(id: SiteSetting.whispers_allowed_groups_map).pluck(:name)
   end

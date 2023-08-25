@@ -83,11 +83,6 @@ module PageObjects
       def expand_if_needed
         expand if is_collapsed?
       end
-
-      def select_row_by_name(name)
-        expand
-        element.find(".select-kit-row[data-name='#{name}']").click
-      end
     end
   end
 end
