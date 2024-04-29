@@ -154,7 +154,9 @@ class PostRevisor
   end
 
   def self.create_small_action_for_category_change(topic:, user:, old_category:, new_category:)
-    return if !SiteSetting.create_post_for_category_and_tag_changes
+    if !old_category || !new_category || !SiteSetting.create_post_for_category_and_tag_changes
+      return
+    end
 
     topic.add_moderator_post(
       user,
@@ -310,10 +312,6 @@ class PostRevisor
     # it can fire events in sidekiq before the post is done saving
     # leading to corrupt state
     QuotedPost.extract_from(@post)
-
-    # This must be done before post_process_post, because that uses
-    # post upload security status to cook URLs.
-    @post.update_uploads_secure_status(source: "post revisor")
 
     post_process_post
 

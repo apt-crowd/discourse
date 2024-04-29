@@ -49,6 +49,7 @@ class Report
   include Reports::UserFlaggingRatio
   include Reports::TrustLevelGrowth
   include Reports::ConsolidatedPageViews
+  include Reports::ConsolidatedPageViewsBrowserDetection
   include Reports::ConsolidatedApiRequests
   include Reports::Visits
   include Reports::TimeToFirstResponse
@@ -76,8 +77,6 @@ class Report
                 :icon,
                 :modes,
                 :prev_data,
-                :prev_start_date,
-                :prev_end_date,
                 :dates_filtering,
                 :error,
                 :primary_color,

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe Chat::Api::ChannelThreadMessagesController do
   fab!(:current_user) { Fabricate(:user) }
   fab!(:thread) do
@@ -17,8 +15,8 @@ RSpec.describe Chat::Api::ChannelThreadMessagesController do
 
   describe "index" do
     describe "success" do
-      fab!(:message_1) { Fabricate(:chat_message, thread: thread) }
-      fab!(:message_2) { Fabricate(:chat_message) }
+      fab!(:message_1) { Fabricate(:chat_message, thread: thread, chat_channel: thread.channel) }
+      fab!(:message_2) { Fabricate(:chat_message, chat_channel: thread.channel) }
 
       it "works" do
         get "/chat/api/channels/#{thread.channel.id}/threads/#{thread.id}/messages"
@@ -71,6 +69,14 @@ RSpec.describe Chat::Api::ChannelThreadMessagesController do
         get "/chat/api/channels/#{thread.channel.id}/threads/#{thread.id}/messages"
 
         expect(response.status).to eq(404)
+      end
+    end
+
+    context "when params are invalid" do
+      it "returns a 400" do
+        get "/chat/api/channels/#{thread.channel.id}/threads/#{thread.id}/messages?page_size=9999"
+
+        expect(response.status).to eq(400)
       end
     end
   end

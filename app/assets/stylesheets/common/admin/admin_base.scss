@@ -10,6 +10,7 @@ $mobile-breakpoint: 700px;
   width: 100%;
   overflow: hidden;
   height: 100%;
+  background: var(--d-content-background);
 
   @include breakpoint(tablet) {
     width: calc(100% + 10px);
@@ -685,6 +686,20 @@ $mobile-breakpoint: 700px;
   @media (max-width: 500px) {
     width: 50%;
   }
+  .nav-stacked {
+    background-color: inherit;
+
+    a.active {
+      color: var(--primary);
+      background-color: initial;
+      font-weight: 700;
+      border-right: 4px solid var(--quaternary);
+
+      &::after {
+        display: none; // Hides the arrow
+      }
+    }
+  }
 }
 
 .admin-detail {
@@ -1035,6 +1050,7 @@ a.inline-editable-field {
 @import "common/admin/badges";
 @import "common/admin/emails";
 @import "common/admin/json_schema_editor";
+@import "common/admin/schema_field";
 @import "common/admin/staff_logs";
 @import "common/admin/customize";
 @import "common/admin/customize-install-theme";
@@ -1045,9 +1061,15 @@ a.inline-editable-field {
 @import "common/admin/admin_report";
 @import "common/admin/admin_report_counters";
 @import "common/admin/admin_report_chart";
+@import "common/admin/admin_report_radar";
 @import "common/admin/admin_report_stacked_chart";
 @import "common/admin/admin_report_table";
 @import "common/admin/admin_report_inline_table";
 @import "common/admin/admin_intro";
 @import "common/admin/admin_emojis";
 @import "common/admin/mini_profiler";
+@import "common/admin/schema_theme_setting_editor";
+@import "common/admin/customize_themes_show_schema";
+
+// EXPERIMENTAL: Revamped admin styles, probably can be split up later down the line.
+@import "common/admin/admin_revamp";

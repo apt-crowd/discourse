@@ -4,9 +4,9 @@ describe "Admin Customize Form Templates", type: :system do
   let(:form_template_page) { PageObjects::Pages::FormTemplate.new }
   let(:ace_editor) { PageObjects::Components::AceEditor.new }
 
-  fab!(:admin) { Fabricate(:admin) }
-  fab!(:form_template) { Fabricate(:form_template) }
-  fab!(:category) { Fabricate(:category) }
+  fab!(:admin)
+  fab!(:form_template)
+  fab!(:category)
 
   before do
     SiteSetting.experimental_form_templates = true
@@ -44,6 +44,25 @@ describe "Admin Customize Form Templates", type: :system do
       form_template_page.click_toggle_preview
       expect(form_template_page).to have_input_field("input")
     end
+
+    context "when using the view template modal" do
+      it "should navigate to the edit page when clicking the edit button" do
+        form_template_page.visit
+        form_template_page.click_view_form_template
+        form_template_page.find(".d-modal__footer .btn-primary").click
+        expect(page).to have_current_path("/admin/customize/form-templates/#{form_template.id}")
+      end
+
+      it "should delete the form template when clicking the delete button" do
+        form_template_page.visit
+        original_template_name = form_template.name
+        form_template_page.click_view_form_template
+        form_template_page.find(".d-modal__footer .btn-danger").click
+        form_template_page.find(".dialog-footer .btn-primary").click
+
+        expect(form_template_page).to have_no_form_template(original_template_name)
+      end
+    end
   end
 
   describe "when visiting the page to edit a form template" do
@@ -66,7 +85,7 @@ describe "Admin Customize Form Templates", type: :system do
       form_template_page.visit_new
 
       sample_name = "My First Template"
-      sample_template = "- type: input"
+      sample_template = "- type: input\n  id: name"
 
       form_template_page.type_in_template_name(sample_name)
       ace_editor.type_input(sample_template)
@@ -101,7 +120,7 @@ describe "Admin Customize Form Templates", type: :system do
     it "should show a preview of the template in a modal when clicking the preview button" do
       form_template_page.visit_new
       form_template_page.type_in_template_name("New Template")
-      ace_editor.type_input("- type: input")
+      ace_editor.type_input("- type: input\n  id: name")
       form_template_page.click_preview_button
 
       expect(form_template_page).to have_preview_modal
@@ -112,7 +131,12 @@ describe "Admin Customize Form Templates", type: :system do
       form_template_page.visit_new
       form_template_page.type_in_template_name("New Template")
       ace_editor.type_input(
-        "- type: input\n- type: textarea\n- type: checkbox\n- type: dropdown\n- type: upload\n- type: multi-select",
+        "- type: input\n  id: name
+\b\b- type: textarea\n  id: description
+\b\b- type: checkbox\n  id: checkbox
+\b\b- type: dropdown\n  id: dropdown
+\b\b- type: upload\n  id: upload
+\b\b- type: multi-select\n  id: multi-select",
       )
       form_template_page.click_preview_button
       expect(form_template_page).to have_input_field("input")
@@ -127,6 +151,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "checkbox",
         '- type: checkbox
+  id: enter-id-here
   attributes:
     label: "Enter label here"
   validations:
@@ -138,6 +163,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "input",
         '- type: input
+  id: enter-id-here
   attributes:
     label: "Enter label here"
     placeholder: "Enter placeholder here"
@@ -150,6 +176,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "textarea",
         '- type: textarea
+  id: enter-id-here
   attributes:
     label: "Enter label here"
     placeholder: "Enter placeholder here"
@@ -162,6 +189,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "dropdown",
         '- type: dropdown
+  id: enter-id-here
   choices:
     - "Option 1"
     - "Option 2"
@@ -169,7 +197,6 @@ describe "Admin Customize Form Templates", type: :system do
   attributes:
     none_label: "Select an item"
     label: "Enter label here"
-    filterable: false
   validations:
     # enter validations here',
       )
@@ -179,6 +206,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "upload",
         '- type: upload
+  id: enter-id-here
   attributes:
     file_types: ".jpg, .png, .gif"
     allow_multiple: false
@@ -192,6 +220,7 @@ describe "Admin Customize Form Templates", type: :system do
       quick_insertion_test(
         "multiselect",
         '- type: multi-select
+  id: enter-id-here
   choices:
     - "Option 1"
     - "Option 2"

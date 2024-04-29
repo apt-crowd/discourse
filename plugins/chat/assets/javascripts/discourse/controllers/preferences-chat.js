@@ -1,16 +1,17 @@
 import Controller from "@ember/controller";
+import { action } from "@ember/object";
+import { service } from "@ember/service";
+import { popupAjaxError } from "discourse/lib/ajax-error";
 import { isTesting } from "discourse-common/config/environment";
 import discourseComputed from "discourse-common/utils/decorators";
-import I18n from "I18n";
-import { action } from "@ember/object";
-import { popupAjaxError } from "discourse/lib/ajax-error";
+import I18n from "discourse-i18n";
 import { CHAT_SOUNDS } from "discourse/plugins/chat/discourse/services/chat-audio-manager";
-import { inject as service } from "@ember/service";
 
 const CHAT_ATTRS = [
   "chat_enabled",
   "only_chat_push_notifications",
   "ignore_channel_wide_mention",
+  "show_thread_title_prompts",
   "chat_sound",
   "chat_email_frequency",
   "chat_header_indicator_preference",
@@ -25,6 +26,7 @@ const EMAIL_FREQUENCY_OPTIONS = [
 export const HEADER_INDICATOR_PREFERENCE_NEVER = "never";
 export const HEADER_INDICATOR_PREFERENCE_DM_AND_MENTIONS = "dm_and_mentions";
 export const HEADER_INDICATOR_PREFERENCE_ALL_NEW = "all_new";
+export const HEADER_INDICATOR_PREFERENCE_ONLY_MENTIONS = "only_mentions";
 const HEADER_INDICATOR_OPTIONS = [
   {
     name: I18n.t("chat.header_indicator_preference.all_new"),
@@ -33,6 +35,10 @@ const HEADER_INDICATOR_OPTIONS = [
   {
     name: I18n.t("chat.header_indicator_preference.dm_and_mentions"),
     value: HEADER_INDICATOR_PREFERENCE_DM_AND_MENTIONS,
+  },
+  {
+    name: I18n.t("chat.header_indicator_preference.only_mentions"),
+    value: HEADER_INDICATOR_PREFERENCE_ONLY_MENTIONS,
   },
   {
     name: I18n.t("chat.header_indicator_preference.never"),

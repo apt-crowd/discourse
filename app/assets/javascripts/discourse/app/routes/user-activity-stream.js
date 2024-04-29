@@ -1,6 +1,6 @@
-import DiscourseRoute from "discourse/routes/discourse";
 import ViewingActionType from "discourse/mixins/viewing-action-type";
-import I18n from "I18n";
+import DiscourseRoute from "discourse/routes/discourse";
+import I18n from "discourse-i18n";
 
 export default DiscourseRoute.extend(ViewingActionType, {
   templateName: "user/stream",

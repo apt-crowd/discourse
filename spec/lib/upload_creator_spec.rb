@@ -3,7 +3,7 @@
 require "file_store/s3_store"
 
 RSpec.describe UploadCreator do
-  fab!(:user) { Fabricate(:user) }
+  fab!(:user)
 
   describe "#create_for" do
     describe "when upload is not an image" do
@@ -147,7 +147,7 @@ RSpec.describe UploadCreator do
     describe "converting to jpeg" do
       def image_quality(path)
         local_path = File.join(Rails.root, "public", path)
-        Discourse::Utils.execute_command("identify", "-format", "%Q", local_path).to_i
+        Discourse::Utils.execute_command("identify", "-ping", "-format", "%Q", local_path).to_i
       end
 
       let(:filename) { "should_be_jpeg.png" }

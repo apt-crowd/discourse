@@ -1,9 +1,9 @@
 import Route from "@ember/routing/route";
 import { once } from "@ember/runloop";
+import { service } from "@ember/service";
 import { seenUser } from "discourse/lib/user-presence";
-import { getOwner } from "discourse-common/lib/get-owner";
 import deprecated from "discourse-common/lib/deprecated";
-import { inject as service } from "@ember/service";
+import { getOwnerWithFallback } from "discourse-common/lib/get-owner";
 
 const DiscourseRoute = Route.extend({
   router: service(),
@@ -52,7 +52,7 @@ const DiscourseRoute = Route.extend({
       { id: "discourse.open-topic-draft" }
     );
     if (this.currentUser?.has_topic_draft) {
-      return getOwner(this)
+      return getOwnerWithFallback(this)
         .lookup("service:composer")
         .openNewTopic({ preferDraft: true });
     }
@@ -64,13 +64,6 @@ const DiscourseRoute = Route.extend({
     }
 
     return user.id === this.currentUser.id;
-  },
-
-  isPoppedState(transition) {
-    return (
-      !transition._discourse_intercepted &&
-      (!!transition.intent.url || !!transition.queryParamsOnly)
-    );
   },
 });
 

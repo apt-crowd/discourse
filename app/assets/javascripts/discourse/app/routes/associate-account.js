@@ -1,15 +1,16 @@
-import DiscourseRoute from "discourse/routes/discourse";
+import { action } from "@ember/object";
+import { next } from "@ember/runloop";
+import { service } from "@ember/service";
+import AssociateAccountConfirm from "discourse/components/modal/associate-account-confirm";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
-import showModal from "discourse/lib/show-modal";
 import cookie from "discourse/lib/cookie";
-import { action } from "@ember/object";
-import { inject as service } from "@ember/service";
-import { next } from "@ember/runloop";
+import DiscourseRoute from "discourse/routes/discourse";
 
 export default DiscourseRoute.extend({
   router: service(),
   currentUser: service(),
+  modal: service(),
 
   beforeModel(transition) {
     if (!this.currentUser) {
@@ -34,9 +35,9 @@ export default DiscourseRoute.extend({
       const model = await ajax(
         `/associate/${encodeURIComponent(params.token)}.json`
       );
-      showModal("associate-account-confirm", { model });
-    } catch {
-      popupAjaxError;
+      this.modal.show(AssociateAccountConfirm, { model });
+    } catch (e) {
+      popupAjaxError(e);
     }
   },
 });

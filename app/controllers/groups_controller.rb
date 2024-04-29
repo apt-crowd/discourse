@@ -194,15 +194,26 @@ class GroupsController < ApplicationController
     group = find_group(:group_id)
     guardian.ensure_can_see_group_members!(group)
 
-    posts = group.posts_for(guardian, params.permit(:before_post_id, :category_id)).limit(20)
-    render_serialized posts.to_a, GroupPostSerializer
+    posts =
+      group.posts_for(guardian, params.permit(:before_post_id, :before, :category_id)).limit(20)
+
+    response = { posts: serialize_data(posts, GroupPostSerializer) }
+
+    if guardian.can_lazy_load_categories?
+      category_ids = posts.map { |p| p.topic.category_id }.compact.uniq
+      categories = Category.secured(guardian).with_parents(category_ids)
+      response[:categories] = serialize_data(categories, CategoryBadgeSerializer)
+    end
+
+    render json: response
   end
 
   def posts_feed
     group = find_group(:group_id)
     guardian.ensure_can_see_group_members!(group)
 
-    @posts = group.posts_for(guardian, params.permit(:before_post_id, :category_id)).limit(50)
+    @posts =
+      group.posts_for(guardian, params.permit(:before_post_id, :before, :category_id)).limit(50)
     @title =
       "#{SiteSetting.title} - #{I18n.t("rss_description.group_posts", group_name: group.name)}"
     @link = Discourse.base_url
@@ -282,10 +293,20 @@ class GroupsController < ApplicationController
       )
     end
 
+    include_custom_fields = params[:include_custom_fields] == "true"
+
+    allowed_fields =
+      User.allowed_user_custom_fields(guardian) +
+        UserField.all.pluck(:id).map { |fid| "#{User::USER_FIELD_PREFIX}#{fid}" }
+
     if params[:order] && %w[last_posted_at last_seen_at].include?(params[:order])
       order = "#{params[:order]} #{dir} NULLS LAST"
     elsif params[:order] == "added_at"
       order = "group_users.created_at #{dir}"
+    elsif include_custom_fields && params[:order] == "custom_field" &&
+          allowed_fields.include?(params[:order_field])
+      order =
+        "(SELECT value FROM user_custom_fields ucf WHERE ucf.user_id = users.id AND ucf.name = '#{params[:order_field]}') #{dir} NULLS LAST"
     end
 
     users = group.users.human_users
@@ -312,8 +333,11 @@ class GroupsController < ApplicationController
     members = users.limit(limit).offset(offset)
     owners = users.where("group_users.owner")
 
+    group_members_serializer =
+      include_custom_fields ? GroupUserWithCustomFieldsSerializer : GroupUserSerializer
+
     render json: {
-             members: serialize_data(members, GroupUserSerializer),
+             members: serialize_data(members, group_members_serializer),
              owners: serialize_data(owners, GroupUserSerializer),
              meta: {
                total: total,
@@ -725,9 +749,7 @@ class GroupsController < ApplicationController
       flair_upload_id
     ]
 
-    if automatic
-      attributes.push(:visibility_level)
-    else
+    if !automatic
       attributes.push(
         :title,
         :allow_membership_requests,
@@ -737,6 +759,8 @@ class GroupsController < ApplicationController
         :membership_request_template,
       )
     end
+
+    attributes.push(:visibility_level, :members_visibility_level) if current_user.staff?
 
     if !automatic && current_user.staff?
       attributes.push(
@@ -758,8 +782,6 @@ class GroupsController < ApplicationController
         :email_password,
         :email_from_alias,
         :primary_group,
-        :visibility_level,
-        :members_visibility_level,
         :name,
         :grant_trust_level,
         :automatic_membership_email_domains,

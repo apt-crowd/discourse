@@ -3,8 +3,8 @@
 require "pretty_text"
 
 RSpec.describe PrettyText do
-  fab!(:user) { Fabricate(:user) }
-  fab!(:post) { Fabricate(:post) }
+  fab!(:user)
+  fab!(:post)
 
   before { SiteSetting.enable_markdown_typographer = false }
 
@@ -220,7 +220,7 @@ RSpec.describe PrettyText do
           <aside class="quote no-group" data-username="maja" data-post="3" data-topic="#{topic.id}">
           <div class="title">
           <div class="quote-controls"></div>
-          <a href="http://test.localhost/t/#{topic.id}/3">#{I18n.t("on_another_topic")}</a></div>
+          <a href="/t/#{topic.id}/3">#{I18n.t("on_another_topic")}</a></div>
           <blockquote>
           <p>I have nothing to say.</p>
           </blockquote>
@@ -327,7 +327,7 @@ RSpec.describe PrettyText do
       let(:default_avatar) do
         "//test.localhost/uploads/default/avatars/42d/57c/46ce7ee487/{size}.png"
       end
-      fab!(:group) { Fabricate(:group) }
+      fab!(:group)
       fab!(:user) { Fabricate(:user, primary_group: group) }
 
       before { User.stubs(:default_template).returns(default_avatar) }
@@ -569,13 +569,13 @@ RSpec.describe PrettyText do
           <a class="mention" href="/u/test">@test</a>,
           <a class="mention-group" href="/g/test-group">@test-group</a>,
           <a class="custom-mention" href="/custom-mention">@test-custom</a>,
+          <a class="mention" href="/u/test1">test1</a>,
           this is a test
         </p>
         HTML
 
         extracted_mentions = PrettyText.extract_mentions(Nokogiri::HTML5.fragment(cooked_html))
-        expect(extracted_mentions).to include("test", "test-group")
-        expect(extracted_mentions).not_to include("test-custom")
+        expect(extracted_mentions).to contain_exactly("test", "test-group")
 
         Plugin::Instance
           .new
@@ -632,10 +632,10 @@ RSpec.describe PrettyText do
 
       # keep in mind spaces should be trimmed per spec
       expect(PrettyText.cook("```   ruby the mooby\n`````")).to eq(
-        '<pre><code class="lang-ruby"></code></pre>',
+        '<pre data-code-wrap="ruby"><code class="lang-ruby"></code></pre>',
       )
       expect(PrettyText.cook("```cpp\ncpp\n```")).to match_html(
-        "<pre><code class='lang-cpp'>cpp\n</code></pre>",
+        "<pre data-code-wrap=\"cpp\"><code class='lang-cpp'>cpp\n</code></pre>",
       )
       expect(PrettyText.cook("```\ncpp\n```")).to match_html(
         "<pre><code class='lang-auto'>cpp\n</code></pre>",
@@ -644,16 +644,13 @@ RSpec.describe PrettyText do
         "<pre><code class='lang-plaintext'>cpp\n</code></pre>",
       )
       expect(PrettyText.cook("```custom\ncustom content\n```")).to match_html(
-        "<pre data-code-wrap='custom'><code class='lang-plaintext'>custom content\n</code></pre>",
+        "<pre data-code-wrap='custom'><code class='lang-custom'>custom content\n</code></pre>",
       )
       expect(PrettyText.cook("```custom foo=bar\ncustom content\n```")).to match_html(
-        "<pre data-code-foo='bar' data-code-wrap='custom'><code class='lang-plaintext'>custom content</code></pre>",
-      )
-      expect(PrettyText.cook("```INVALID a=1\n```")).to match_html(
-        "<pre data-code-a='1' data-code-wrap='INVALID'><code class='lang-plaintext'>\n</code></pre>",
+        "<pre data-code-foo='bar' data-code-wrap='custom'><code class='lang-custom'>custom content</code></pre>",
       )
       expect(PrettyText.cook("```INVALID a=1, foo=bar , baz=2\n```")).to match_html(
-        "<pre data-code-a='1' data-code-foo='bar' data-code-baz='2' data-code-wrap='INVALID'><code class='lang-plaintext'>\n</code></pre>",
+        "<pre data-code-a='1' data-code-foo='bar' data-code-baz='2' data-code-wrap='INVALID'><code class='lang-INVALID'>\n</code></pre>",
       )
       expect(PrettyText.cook("```text\n```")).to match_html(
         "<pre><code class='lang-plaintext'>\n</code></pre>",
@@ -662,27 +659,28 @@ RSpec.describe PrettyText do
         "<pre><code class='lang-auto'>\n</code></pre>",
       )
       expect(PrettyText.cook("```ruby startline=3 $%@#\n```")).to match_html(
-        "<pre data-code-startline='3'><code class='lang-ruby'>\n</code></pre>",
+        "<pre data-code-startline='3' data-code-wrap='ruby'><code class='lang-ruby'>\n</code></pre>",
       )
       expect(PrettyText.cook("```mermaid a_-你=17\n```")).to match_html(
-        "<pre data-code-a_-='17' data-code-wrap='mermaid'><code class='lang-plaintext'>\n</code></pre>",
+        "<pre data-code-a_-='17' data-code-wrap='mermaid'><code class='lang-mermaid'>\n</code></pre>",
       )
       expect(
         PrettyText.cook("```mermaid foo=<script>alert(document.cookie)</script>\n```"),
       ).to match_html(
-        "<pre data-code-foo='&lt;script&gt;alert(document.cookie)&lt;/script&gt;' data-code-wrap='mermaid'><code class='lang-plaintext'>\n</code></pre>",
+        "<pre data-code-foo='&lt;script&gt;alert(document.cookie)&lt;/script&gt;' data-code-wrap='mermaid'><code class='lang-mermaid'>\n</code></pre>",
       )
-      expect(PrettyText.cook("```mermaid foo=‮ begin admin o\n```")).to match_html(
-        "<pre data-code-wrap='mermaid'><code class='lang-plaintext'>\n</code></pre>",
+      # Check unicode bidi characters are stripped:
+      expect(PrettyText.cook("```mermaid foo=\u202E begin admin o\u001C\n```")).to match_html(
+        "<pre data-code-wrap='mermaid'><code class='lang-mermaid'>\n</code></pre>",
       )
       expect(PrettyText.cook("```c++\nc++\n```")).to match_html(
-        "<pre><code class='lang-c++'>c++\n</code></pre>",
+        "<pre data-code-wrap='c++'><code class='lang-c++'>c++\n</code></pre>",
       )
       expect(PrettyText.cook("```structured-text\nstructured-text\n```")).to match_html(
-        "<pre><code class='lang-structured-text'>structured-text\n</code></pre>",
+        "<pre data-code-wrap='structured-text'><code class='lang-structured-text'>structured-text\n</code></pre>",
       )
       expect(PrettyText.cook("```p21\np21\n```")).to match_html(
-        "<pre><code class='lang-p21'>p21\n</code></pre>",
+        "<pre data-code-wrap='p21'><code class='lang-p21'>p21\n</code></pre>",
       )
       expect(
         PrettyText.cook("<pre data-code='3' data-code-foo='1' data-malicous-code='2'></pre>"),
@@ -1956,6 +1954,39 @@ HTML
   describe "watched words - replace & link" do
     after { Discourse.redis.flushdb }
 
+    # Makes sure that mini_racer/libv8-node env doesn't regress
+    it "finishes in a timely matter" do
+      sql = 1500.times.map { |i| <<~SQL }.join
+        INSERT INTO watched_words
+        (created_at, updated_at, word, action, replacement)
+        VALUES
+        (
+          :now,
+          :now,
+          'word_#{i}',
+          :action,
+          'replacement_#{i}'
+        );
+      SQL
+
+      DB.exec(sql, now: Time.current, action: WatchedWord.actions[:replace])
+
+      Fabricate(
+        :watched_word,
+        action: WatchedWord.actions[:replace],
+        word: "nope",
+        replacement: "yep",
+      )
+
+      # Due to a bug in node 18.16 and lower this takes about 11s.
+      # On node 18.19 and newer it takes about 250ms
+      expect do
+        Timeout.timeout(3) do
+          expect(PrettyText.cook("abc nope def")).to match_html("<p>abc yep def</p>")
+        end
+      end.not_to raise_error
+    end
+
     it "replaces words with other words" do
       Fabricate(
         :watched_word,
@@ -1978,6 +2009,19 @@ HTML
 
       expect(PrettyText.cook("Lorem ipsum xdolor sit amet")).to match_html(<<~HTML)
         <p>Lorem ipsum xdolor sit amet</p>
+      HTML
+    end
+
+    it "replaces words with wildcards" do
+      Fabricate(
+        :watched_word,
+        action: WatchedWord.actions[:replace],
+        word: "*dolor*",
+        replacement: "something else",
+      )
+
+      expect(PrettyText.cook("Lorem ipsum xdolorx sit amet")).to match_html(<<~HTML)
+        <p>Lorem ipsum something else sit amet</p>
       HTML
     end
 
@@ -2669,5 +2713,17 @@ HTML
     cooked = PrettyText.cook(md)
 
     expect(cooked.strip).to eq(html.strip)
+  end
+
+  it "handles deprecations correctly" do
+    Rails
+      .logger
+      .expects(:warn)
+      .once
+      .with("[PrettyText] Deprecation notice: Some deprecation message")
+
+    PrettyText.v8.eval <<~JS
+      require("discourse-common/lib/deprecated").default("Some deprecation message");
+    JS
   end
 end

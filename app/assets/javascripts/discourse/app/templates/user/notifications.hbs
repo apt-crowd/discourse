@@ -2,7 +2,7 @@
   {{hide-application-footer}}
 {{/if}}
 
-<DSection @pageClass="user-notifications" />
+{{body-class "user-notifications-page"}}
 
 <div class="user-navigation user-navigation-secondary">
   <HorizontalOverflowNav @ariaLabel="User secondary - notifications">
@@ -53,6 +53,15 @@
       <span>{{i18n "user_action_groups.11"}}</span>
     </DNavigationItem>
 
+    <DNavigationItem
+      @route="userNotifications.links"
+      @ariaCurrentContext="subNav"
+      class="user-nav__notifications-links"
+    >
+      {{d-icon "link"}}
+      <span>{{i18n "user_action_groups.17"}}</span>
+    </DNavigationItem>
+
     <PluginOutlet
       @name="user-notifications-bottom"
       @connectorTagName="li"
@@ -65,11 +74,11 @@
     <div class="navigation-controls">
       <DButton
         @title="user.dismiss_notifications_tooltip"
-        @class="btn btn-default dismiss-notifications"
         @action={{action "resetNew"}}
         @label="user.dismiss_notifications"
         @icon="check"
         @disabled={{this.allNotificationsRead}}
+        class="btn-default dismiss-notifications"
       />
     </div>
   {{/if}}
@@ -77,9 +86,9 @@
 
 <section class="user-content" id="user-content">
   <LoadMore
-    @class="notification-history user-stream"
     @selector=".user-stream .notification"
     @action={{action "loadMore"}}
+    class="notification-history user-stream"
   >
     {{outlet}}
     <ConditionalLoadingSpinner @condition={{this.model.loadingMore}} />

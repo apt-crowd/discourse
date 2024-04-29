@@ -1,9 +1,9 @@
-import { action } from "@ember/object";
-import discourseComputed from "discourse-common/utils/decorators";
-import I18n from "I18n";
 import Component from "@ember/component";
-import { inject as service } from "@ember/service";
+import { action } from "@ember/object";
+import { service } from "@ember/service";
 import DismissReadModal from "discourse/components/modal/dismiss-read";
+import discourseComputed from "discourse-common/utils/decorators";
+import I18n from "discourse-i18n";
 
 export default Component.extend({
   tagName: "",
@@ -34,10 +34,9 @@ export default Component.extend({
   @discourseComputed("position", "model.topics.length")
   showBasedOnPosition(position, topicCount) {
     if (position !== "top") {
-      return true;
+      return topicCount > 5;
     }
-
-    return topicCount > 5;
+    return true;
   },
 
   @discourseComputed("selectedTopics.length")
@@ -52,7 +51,7 @@ export default Component.extend({
 
   @discourseComputed("selectedTopics.length")
   dismissNewLabel(selectedTopicCount) {
-    if (this.currentUser.new_new_view_enabled) {
+    if (this.currentUser?.new_new_view_enabled) {
       return I18n.t("topics.bulk.dismiss_button");
     } else if (selectedTopicCount === 0) {
       return I18n.t("topics.bulk.dismiss_new");
@@ -72,6 +71,7 @@ export default Component.extend({
       model: {
         title: dismissTitle,
         count: this.selectedTopics.length,
+        dismissRead: this.dismissRead,
       },
     });
   },

@@ -547,6 +547,10 @@ class Reviewable < ActiveRecord::Base
     TYPE_TO_BASIC_SERIALIZER[self.type.to_sym] || BasicReviewableSerializer
   end
 
+  def type_class
+    Reviewable.sti_class_for(self.type)
+  end
+
   def self.lookup_serializer_for(type)
     "#{type}Serializer".constantize
   rescue NameError
@@ -668,7 +672,6 @@ class Reviewable < ActiveRecord::Base
       a.icon = "user-times"
       a.label = "reviewables.actions.reject_user.delete.title"
       a.require_reject_reason = require_reject_reason
-      a.description = "reviewables.actions.reject_user.delete.description"
     end
 
     actions.add(:delete_user_block, bundle: bundle) do |a|

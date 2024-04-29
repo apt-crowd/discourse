@@ -9,6 +9,7 @@
   @value={{this.topicTitle}}
   @placeholderKey="choose_topic.title.placeholder"
   @id="choose-topic-title"
+  {{did-insert this.focusInput}}
 />
 
 {{#if this.loading}}
@@ -35,7 +36,7 @@
             <span class="topic-categories">
               {{bound-category-link
                 t.category
-                recursive=true
+                ancestors=t.category.predecessors
                 hideParent=true
                 link=false
               }}

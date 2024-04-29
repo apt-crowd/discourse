@@ -6,6 +6,7 @@ module PageObjects
       class Sidebar < Base
         def open_on_mobile
           click_button("toggle-hamburger-menu")
+          wait_for_animation(find("div.menu-panel"))
         end
 
         def visible?
@@ -38,6 +39,10 @@ module PageObjects
 
         def custom_section_modal_title
           find("#discourse-modal-title")
+        end
+
+        def toggle_all_sections
+          find(".sidebar-toggle-all-sections").click
         end
       end
     end

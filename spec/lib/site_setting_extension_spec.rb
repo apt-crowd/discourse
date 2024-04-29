@@ -281,7 +281,7 @@ RSpec.describe SiteSettingExtension do
   end
 
   describe "remove_override" do
-    fab!(:upload) { Fabricate(:upload) }
+    fab!(:upload)
 
     before do
       settings.setting(:test_override, "test")
@@ -390,6 +390,7 @@ RSpec.describe SiteSettingExtension do
       def self.valid_value?(v)
         true
       end
+
       def self.values
         [1, 2, 3]
       end
@@ -409,9 +410,11 @@ RSpec.describe SiteSettingExtension do
       def self.valid_value?(v)
         self.values.include?(v)
       end
+
       def self.values
         ["en"]
       end
+
       def self.translate_names?
         false
       end
@@ -836,7 +839,7 @@ RSpec.describe SiteSettingExtension do
 
   describe ".setup_methods" do
     describe "for uploads site settings" do
-      fab!(:upload) { Fabricate(:upload) }
+      fab!(:upload)
       fab!(:upload2) { Fabricate(:upload) }
 
       it "should return the upload record" do
@@ -854,6 +857,29 @@ RSpec.describe SiteSettingExtension do
     end
   end
 
+  describe "mandatory_values for group list settings" do
+    it "adds mandatory values" do
+      expect(SiteSetting.embedded_media_post_allowed_groups).to eq("1|2|10")
+
+      SiteSetting.embedded_media_post_allowed_groups = 14
+      expect(SiteSetting.embedded_media_post_allowed_groups).to eq("1|2|14")
+
+      SiteSetting.embedded_media_post_allowed_groups = ""
+      expect(SiteSetting.embedded_media_post_allowed_groups).to eq("1|2")
+
+      test_provider = SiteSetting.provider
+      SiteSetting.provider = SiteSettings::DbProvider.new(SiteSetting)
+      SiteSetting.embedded_media_post_allowed_groups = "13|14"
+      expect(SiteSetting.embedded_media_post_allowed_groups).to eq("1|2|13|14")
+      expect(SiteSetting.find_by(name: "embedded_media_post_allowed_groups").value).to eq(
+        "1|2|13|14",
+      )
+    ensure
+      SiteSetting.find_by(name: "embedded_media_post_allowed_groups").destroy
+      SiteSetting.provider = test_provider
+    end
+  end
+
   describe "_map extension for list settings" do
     it "handles splitting group_list settings" do
       SiteSetting.personal_message_enabled_groups = "1|2"
@@ -868,6 +894,11 @@ RSpec.describe SiteSettingExtension do
     it "handles splitting simple list settings" do
       SiteSetting.ga_universal_auto_link_domains = "test.com|xy.com"
       expect(SiteSetting.ga_universal_auto_link_domains_map).to eq(%w[test.com xy.com])
+    end
+
+    it "handles splitting list settings with no type" do
+      SiteSetting.post_menu = "read|like"
+      expect(SiteSetting.post_menu_map).to eq(%w[read like])
     end
 
     it "does not handle splitting secret list settings" do

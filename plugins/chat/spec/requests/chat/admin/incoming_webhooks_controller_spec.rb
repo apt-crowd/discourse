@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe Chat::Admin::IncomingWebhooksController do
-  fab!(:admin) { Fabricate(:admin) }
-  fab!(:user) { Fabricate(:user) }
+  fab!(:admin)
+  fab!(:user)
   fab!(:chat_channel1) { Fabricate(:category_channel) }
   fab!(:chat_channel2) { Fabricate(:category_channel) }
 
@@ -119,6 +117,7 @@ RSpec.describe Chat::Admin::IncomingWebhooksController do
 
   describe "#delete" do
     fab!(:existing) { Fabricate(:incoming_chat_webhook, chat_channel: chat_channel1) }
+    fab!(:webhook_event) { Fabricate(:chat_webhook_event, incoming_chat_webhook: existing) }
 
     it "errors for non-staff" do
       sign_in(user)
@@ -135,13 +134,6 @@ RSpec.describe Chat::Admin::IncomingWebhooksController do
 
     it "destroys webhook events records" do
       sign_in(admin)
-
-      Chat::MessageCreator.create(
-        chat_channel: existing.chat_channel,
-        user: Discourse.system_user,
-        content: "foo",
-        incoming_chat_webhook: existing,
-      )
 
       expect { delete "/admin/plugins/chat/hooks/#{existing.id}.json" }.to change {
         Chat::WebhookEvent.count

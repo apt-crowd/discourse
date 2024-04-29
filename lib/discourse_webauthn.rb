@@ -1,8 +1,4 @@
 # frozen_string_literal: true
-require "webauthn/challenge_generator"
-require "webauthn/security_key_base_validation_service"
-require "webauthn/security_key_registration_service"
-require "webauthn/security_key_authentication_service"
 
 module DiscourseWebauthn
   ACCEPTABLE_REGISTRATION_TYPE = "webauthn.create"
@@ -18,28 +14,46 @@ module DiscourseWebauthn
 
   class InvalidOriginError < SecurityKeyError
   end
+
   class InvalidRelyingPartyIdError < SecurityKeyError
   end
+
   class UserVerificationError < SecurityKeyError
   end
+
+  class UserPresenceError < SecurityKeyError
+  end
+
   class ChallengeMismatchError < SecurityKeyError
   end
+
   class InvalidTypeError < SecurityKeyError
   end
+
   class UnsupportedPublicKeyAlgorithmError < SecurityKeyError
   end
+
   class UnsupportedAttestationFormatError < SecurityKeyError
   end
+
   class CredentialIdInUseError < SecurityKeyError
   end
+
   class MalformedAttestationError < SecurityKeyError
   end
-  class NotFoundError < SecurityKeyError
+
+  class KeyNotFoundError < SecurityKeyError
   end
+
+  class MalformedPublicKeyCredentialError < SecurityKeyError
+  end
+
   class OwnershipError < SecurityKeyError
   end
+
   class PublicKeyError < SecurityKeyError
   end
+
   class UnknownCOSEAlgorithmError < SecurityKeyError
   end
 
@@ -59,26 +73,35 @@ module DiscourseWebauthn
     credential_ids = user.second_factor_security_key_credential_ids
     {
       allowed_credential_ids: credential_ids,
-      challenge:
-        secure_session[
-          DiscourseWebauthn::ChallengeGenerator::ChallengeSession.session_challenge_key(user)
-        ],
+      challenge: secure_session[self.session_challenge_key(user)],
     }
   end
 
-  def self.rp_id(user, secure_session)
-    secure_session[DiscourseWebauthn::ChallengeGenerator::ChallengeSession.session_rp_id_key(user)]
-  end
-
-  def self.rp_name(user, secure_session)
-    secure_session[
-      DiscourseWebauthn::ChallengeGenerator::ChallengeSession.session_rp_name_key(user)
-    ]
-  end
-
   def self.challenge(user, secure_session)
-    secure_session[
-      DiscourseWebauthn::ChallengeGenerator::ChallengeSession.session_challenge_key(user)
-    ]
+    secure_session[self.session_challenge_key(user)]
+  end
+
+  def self.rp_id
+    Rails.env.production? ? Discourse.current_hostname : "localhost"
+  end
+
+  def self.origin
+    case Rails.env
+    when "development"
+      # defaults to the Ember CLI local port
+      # you might need to change this and the rp_id above
+      # if you are using a non-default port/hostname locally
+      "http://localhost:4200"
+    else
+      Discourse.base_url_no_prefix
+    end
+  end
+
+  def self.rp_name
+    SiteSetting.title
+  end
+
+  def self.session_challenge_key(user)
+    "staged-webauthn-challenge-#{user&.id}"
   end
 end

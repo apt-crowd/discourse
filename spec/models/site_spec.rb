@@ -66,8 +66,8 @@ RSpec.describe Site do
   end
 
   describe "#categories" do
-    fab!(:category) { Fabricate(:category) }
-    fab!(:user) { Fabricate(:user) }
+    fab!(:category)
+    fab!(:user)
     let(:guardian) { Guardian.new(user) }
 
     it "omits read restricted categories" do
@@ -183,6 +183,40 @@ RSpec.describe Site do
         DiscoursePluginRegistry.clear_modifiers!
       end
     end
+
+    context "with lazy loaded categories enabled" do
+      fab!(:user)
+
+      before { SiteSetting.lazy_load_categories_groups = "#{Group::AUTO_GROUPS[:everyone]}" }
+
+      it "does not return any categories for anonymous users" do
+        site = Site.new(Guardian.new)
+
+        expect(site.categories).to eq([])
+      end
+
+      it "returns only sidebar categories and their parent categories" do
+        parent_category = Fabricate(:category)
+        category.update!(parent_category: parent_category)
+        Fabricate(:category_sidebar_section_link, linkable: category, user: user)
+
+        site = Site.new(Guardian.new(user))
+
+        expect(site.categories.map { |c| c[:id] }).to contain_exactly(
+          parent_category.id,
+          category.id,
+        )
+      end
+
+      it "returns only visible sidebar categories" do
+        Fabricate(:category_sidebar_section_link, linkable: category, user: user)
+        category.update!(read_restricted: true)
+
+        site = Site.new(Guardian.new(user))
+
+        expect(site.categories).to eq([])
+      end
+    end
   end
 
   it "omits groups user can not see" do
@@ -201,7 +235,7 @@ RSpec.describe Site do
   end
 
   describe "site_groups_query modifier" do
-    fab!(:user) { Fabricate(:user) }
+    fab!(:user)
     fab!(:cool_group) { Fabricate(:group, name: "cool-group") }
     fab!(:boring_group) { Fabricate(:group, name: "boring-group") }
 

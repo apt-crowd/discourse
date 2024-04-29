@@ -5,7 +5,7 @@ require_relative "shared_context_for_backup_restore"
 RSpec.describe BackupRestore::SystemInterface do
   subject(:system_interface) { BackupRestore::SystemInterface.new(logger) }
 
-  include_context "with shared stuff"
+  include_context "with shared backup restore context"
 
   describe "readonly mode" do
     after { Discourse::READONLY_KEYS.each { |key| Discourse.redis.del(key) } }
@@ -132,7 +132,7 @@ RSpec.describe BackupRestore::SystemInterface do
           key = "#{hostname}:#{pid}"
           process = { pid: pid, hostname: hostname }
 
-          conn.sadd("processes", key)
+          conn.sadd?("processes", key)
           conn.hmset(key, "info", Sidekiq.dump_json(process))
 
           data =
